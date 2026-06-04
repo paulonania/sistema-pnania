@@ -144,7 +144,6 @@ if not df_dados.empty:
     t_tra = f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}"
     t_sup = f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}"
     
-    # FATIAMENTO ABSOLUTO DAS TRÊS LINHAS DA TABELA PARA EVITAR SINTAXERROR
     dados_linha1 = [
         t_amo, 
         t_tra, 
@@ -221,4 +220,165 @@ if not df_dados.empty:
     
     img_espessura = io.BytesIO()
     if coletou_espessura:
-        zi_espessura = griddata((df_
+        # FATIAMENTO VERTICAL COMPLETO DA FUNÇÃO GRIDDATA DA ESPESSURA
+        zi_espessura = griddata(
+            (df_dados['X'], df_dados['Y']), 
+            df_dados['Espessura'], 
+            (xi, yi), 
+            method='cubic'
+        )
+        fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
+        mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
+        plt_ax2.set_title(f'MAPA DE ESPESSURA DA CAMADA (IO: {io_espessura:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        plt_ax2.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
+        plt_ax2.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
+        
+        plt_ax2.set_yticks(range(1, n_pontos + 1))
+        plt_ax2.set_yticklabels(lista_comprimento, fontsize=9, fontweight='bold')
+        plt_ax2.set_xticks(range(1, n_linhas + 1))
+        plt_ax2.set_xticklabels(lista_largura, fontsize=9)
+        
+        fig2.colorbar(mapa1, ax=plt_ax2).set_label('Espessura (cm)', fontsize=9, fontweight='bold')
+        plt.savefig(img_espessura, format='png', bbox_inches='tight', dpi=150)
+        img_espessura.seek(0)
+
+    img_umidade = io.BytesIO()
+    if coletou_umidade:
+        # FATIAMENTO VERTICAL COMPLETO DA FUNÇÃO GRIDDATA DA UMIDADE
+        zi_umidade = griddata(
+            (df_dados['X'], df_dados['Y']), 
+            df_dados['Umidade'], 
+            (xi, yi), 
+            method='cubic'
+        )
+        fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
+        mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
+        plt_ax3.set_title(f'MAPA DE UMIDADE DA PISTA (IO: {io_umidade:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        plt_ax3.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
+        plt_ax3.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
+        
+        plt_ax3.set_yticks(range(1, n_pontos + 1))
+        plt_ax3.set_yticklabels(lista_comprimento, fontsize=9, fontweight='bold')
+        plt_ax3.set_xticks(range(1, n_linhas + 1))
+        plt_ax3.set_xticklabels(lista_largura, fontsize=9)
+        
+        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
+        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
+        img_umidade.seek(0)
+
+    # LINE CARS PROTECTED AGAINST CUTS
+    st.divider()
+    st.header("📈 Relatórios de Desempenho")
+    
+    col_g1, col_g2 = st.columns([1.2, 1.0])
+    with col_g1:
+        st.pyplot(fig1)
+    with col_g2:
+        if coletou_espessura: st.pyplot(fig2)
+        if coletou_umidade: st.pyplot(fig3)
+
+    # EMISSÃO DO LAUDO EM PDF (LIMITADO A 2 PÁGINAS)
+    with st.sidebar:
+        st.divider()
+        st.header("📄 Emissão de Documento")
+        
+        if st.button("✨ Gerar Relatório em PDF"):
+            pdf = FPDF(orientation="P", unit="mm", format="A4")
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.add_page()
+            
+            if os.path.exists("logo.png"):
+                pdf.image("logo.png", x=10, y=10, w=45)
+                pdf.set_y(34)
+            else:
+                pdf.set_y(15)
+            
+            pdf.set_font("Helvetica", "B", 18)
+            pdf.set_text_color(15, 58, 97)
+            
+            txt_tit = "RELATÓRIO DE DESEMPENHO"
+            pdf.cell(0, 12, txt_tit.encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+            
+            pdf.set_draw_color(220, 222, 225)
+            pdf.line(10, 45, 200, 45)
+            pdf.set_y(48)
+            
+            pdf.set_text_color(50, 50, 50)
+            pdf.set_fill_color(245, 247, 250)
+            
+            pdf.set_font("Helvetica", "B", 10)
+            txt_quadro = "  DADOS DA PROPRIEDADE E DA COLETA"
+            pdf.cell(0, 5, txt_quadro.encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
+            
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 5, " Fazenda / Haras: ", border="LT")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
+            
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 5, " Pista / Picadeiro: ", border="L")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
+            
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 5, " Data da Coleta: ", border="LB")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
+            
+            if txt_obs:
+                pdf.ln(1)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.cell(40, 5, " Manejo Prévio: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 8.5)
+                pdf.multi_cell(0, 4.5, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+            
+            if txt_parecer:
+                pdf.ln(1)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.cell(40, 5, " Parecer Técnico: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 8.5)
+                pdf.multi_cell(0, 4.5, f"{txt_parecer}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+            
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 10.5)
+            pdf.cell(0, 5, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+            pdf.ln(1)
+            pdf.image(img_penetro, x=22, w=165)
+            
+            pdf.ln(3)
+            y_box = pdf.get_y()
+            
+            pdf.set_fill_color(245, 247, 250)
+            pdf.set_draw_color(220, 222, 225)
+            pdf.rect(15, y_box, 180, 11, "FD")
+            
+            pdf.set_font("Helvetica", "B", 8.5)
+            pdf.set_text_color(40, 50, 60)
+            pdf.set_xy(15, y_box + 1.5)
+            pdf.cell(180, 4, "Diretrizes do Indice de Oscilacao (IO):", ln=True, align="C")
+            
+            y_itens = y_box + 6.2
+            
+            pdf.set_fill_color(40, 167, 69)
+            pdf.ellipse(26, y_itens + 0.3, 3.0, 3.0, "F")
+            pdf.set_xy(31, y_itens)
+            pdf.cell(45, 4, "Excelente: < 10.0%", ln=False)
+            
+            pdf.set_fill_color(255, 193, 7)
+            pdf.ellipse(84, y_itens + 0.3, 3.0, 3.0, "F")
+            pdf.set_xy(89, y_itens)
+            pdf.cell(45, 4, "Alerta: 10.0% - 15.0%", ln=False)
+            
+            pdf.set_fill_color(220, 53, 69)
+            pdf.ellipse(144, y_itens + 0.3, 3.0, 3.0, "F")
+            pdf.set_xy(149, y_itens)
+            pdf.cell(45, 4, "Critico: > 15.0%", ln=True)
+            
+            if coletou_espessura or coletou_umidade:
+                pdf.add_page()
+                if os.path.exists("logo.png"):
+                    pdf.image("logo.png", x=10, y=8, w=25)
+                
+                pdf.line(10, 20, 200, 20)
+                pdf.set_text_color(50, 50, 50)
+                pdf
