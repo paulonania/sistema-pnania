@@ -29,7 +29,6 @@ with st.sidebar:
         "Manejo Prévio (O que foi feito antes)", 
         "Ex: Irrigado por 10 minutos, passou o rastelo com as hastes a 2 polegadas."
     )
-    # NOVO CAMPO: DIAGNÓSTICO / PARECER TÉCNICO
     txt_parecer = st.text_area(
         "Diagnóstico e Parecer Técnico",
         "Ex: Após a escarificação a pista ficou muito solta, indicando a necessidade de passar o rastelo somente com os rolos pelo menos 2 vezes com sobreposição de 50% e com sentidos opostos."
@@ -203,9 +202,11 @@ if not df_dados.empty:
             else:
                 pdf.set_y(15)
             
-            pdf.set_font("Helvetica", "B", 22)
+            pdf.set_font("Helvetica", "B", 18)
             pdf.set_text_color(15, 58, 97)
-            pdf.cell(0, 12, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+            
+            # NOVO TÍTULO ATUALIZADO AQUI
+            pdf.cell(0, 12, "RELATÓRIO DE DESEMPENHO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
             
             pdf.set_draw_color(220, 222, 225)
             pdf.line(10, 48, 200, 48)
@@ -233,7 +234,6 @@ if not df_dados.empty:
             pdf.set_font("Helvetica", "B", 9)
             pdf.cell(0, 6, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
             
-            # IMPRESSÃO DO MANEJO PRÉVIO (COMPACTADO PARA NÃO ESTOURAR A PÁGINA)
             if txt_obs:
                 pdf.ln(2)
                 pdf.set_font("Helvetica", "B", 9)
@@ -241,7 +241,6 @@ if not df_dados.empty:
                 pdf.set_font("Helvetica", "", 9)
                 pdf.multi_cell(0, 6, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
             
-            # IMPRESSÃO DO PARECER TÉCNICO / DIAGNÓSTICO
             if txt_parecer:
                 pdf.ln(1)
                 pdf.set_font("Helvetica", "B", 9)
@@ -255,7 +254,6 @@ if not df_dados.empty:
             pdf.ln(1)
             pdf.image(img_penetro, x=15, w=180)
             
-            # --- PÁGINA 2: MAPAS ---
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
                 if os.path.exists("logo.png"):
@@ -278,7 +276,7 @@ if not df_dados.empty:
             st.download_button(
                 label="📥 Baixar Laudo Técnico (.PDF)", 
                 data=bytes(pdf_output), 
-                file_name=f"Laudo_Tecnico_{nome_fazenda.replace(' ', '_')}.pdf", 
+                file_name=f"Relatorio_Desempenho_{nome_fazenda.replace(' ', '_')}.pdf", 
                 mime="application/pdf"
             )
 
