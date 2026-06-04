@@ -34,7 +34,7 @@ with st.sidebar:
     coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True)
 
 # ==============================================================================
-# 2. ENTRADA DE DADOS - Dados Coletados (Valores Padrão de Fábrica)
+# 2. ENTRADA DE DADOS - Dados Coletados
 # ==============================================================================
 st.header("📋 Dados Coletados")
 st.markdown("Insira os valores coletados de forma direta para cada ponto da grade:")
@@ -138,80 +138,4 @@ if not df_dados.empty:
     plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
     img_penetro.seek(0)
 
-    xi = np.linspace(1, n_linhas, 100)
-    yi = np.linspace(1, n_pontos, 100)
-    xi, yi = np.meshgrid(xi, yi)
-    
-    img_espessura = io.BytesIO()
-    if coletou_espessura:
-        zi_espessura = griddata((df_dados['X'], df_dados['Y']), df_dados['Espessura'], (xi, yi), method='cubic')
-        fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
-        mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
-        plt_ax2.set_title('MAPA DE ESPESSURA DA CAMADA (cm)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
-        plt_ax2.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
-        plt_ax2.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
-        plt_ax2.set_yticks(range(1, n_pontos + 1))
-        plt_ax2.set_yticklabels([str(i) for i in range(1, n_pontos + 1)], fontsize=9, fontweight='bold')
-        plt_ax2.set_xticks(range(1, n_linhas + 1))
-        plt_ax2.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
-        fig2.colorbar(mapa1, ax=plt_ax2).set_label('Espessura (cm)', fontsize=9, fontweight='bold')
-        plt.savefig(img_espessura, format='png', bbox_inches='tight', dpi=150)
-        img_espessura.seek(0)
-
-    img_umidade = io.BytesIO()
-    if coletou_umidade:
-        zi_umidade = griddata((df_dados['X'], df_dados['Y']), df_dados['Umidade'], (xi, yi), method='cubic')
-        fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
-        mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
-        plt_ax3.set_title('MAPA DE UMIDADE DA PISTA (%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
-        plt_ax3.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
-        plt_ax3.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
-        plt_ax3.set_yticks(range(1, n_pontos + 1))
-        plt_ax3.set_yticklabels([str(i) for i in range(1, n_pontos + 1)], fontsize=9, fontweight='bold')
-        plt_ax3.set_xticks(range(1, n_linhas + 1))
-        plt_ax3.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
-        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
-        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
-        img_umidade.seek(0)
-
-    # EXIBIÇÃO NA TELA - Relatórios
-    st.divider()
-    st.header("📈 Relatórios")
-    
-    col_g1, col_g2 = st.columns([1.2, 1.0])
-    with col_g1:
-        st.pyplot(fig1)
-    with col_g2:
-        if coletou_espessura: st.pyplot(fig2)
-        if coletou_umidade: st.pyplot(fig3)
-
-    # EMISSÃO DO LAUDO EM PDF (RASTREADO E LIMPO)
-    with st.sidebar:
-        st.divider()
-        st.header("📄 Emissão de Documento")
-        
-        if st.button("✨ Gerar Relatório em PDF"):
-            pdf = FPDF(orientation="P", unit="mm", format="A4")
-            pdf.set_auto_page_break(auto=True, margin=15)
-            
-            # --- PÁGINA 1: Capa com Logo à Esquerda ---
-            pdf.add_page()
-            
-            if os.path.exists("logo.png"):
-                pdf.image("logo.png", x=10, y=10, w=45)
-                pdf.set_y(34)
-            else:
-                pdf.set_y(15)
-            
-            pdf.set_font("Helvetica", "B", 22)
-            pdf.set_text_color(15, 58, 97)
-            pdf.cell(0, 12, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
-            
-            pdf.set_draw_color(220, 222, 225)
-            pdf.line(10, 48, 200, 48)
-            pdf.set_y(54)
-            
-            pdf.set_text_color(50, 50, 50)
-            pdf.set_fill_color(245, 247, 250)
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 7, "  DADOS DA PROPRIEDADE E DA COLETA".encode('latin-1', 'replace').decode('latin-1'), ln=True
+    xi = np.linspace(1, n_linhas
