@@ -11,47 +11,53 @@ import os
 st.set_page_config(page_title="Sistema Pnania Premium", layout="wide")
 
 # ==============================================================================
-# CONTROLE DE RESET DINÂMICO DE TELA
+# CONTROLE DE RESET ABSOLUTO (CRIANDO UMA NOVA PLANILHA LIMPA)
 # ==============================================================================
-if "reset_id" not in st.session_state:
-    st.session_state["reset_id"] = 0
+if "grade_id" not in st.session_state:
+    st.session_state["grade_id"] = 1000
 
-def limpar_dados():
+def reset_absoluto():
+    # Varre e deleta absolutamente toda a memória ativa do app
     for key in list(st.session_state.keys()):
-        if key != "reset_id":
+        if key != "grade_id":
             del st.session_state[key]
-    st.session_state["reset_id"] += 1
+    # Muda o ID da grade. Isso força o navegador a destruir os campos velhos
+    st.session_state["grade_id"] += 1
 
 st.title("📊 Gerador de Relatórios — Método Pnania")
 st.markdown("Configure a malha de amostragem da pista e preencha os dados abaixo. O sistema gera os mapas contínuos na hora!")
+
+# ID atual do circuito de coleta
+id_atual = st.session_state["grade_id"]
 
 # ==============================================================================
 # 1. IDENTIFICAÇÃO E CONFIGURAÇÃO DA MALHA (BARRA LATERAL)
 # ==============================================================================
 with st.sidebar:
     st.header("📋 Identificação do Relatório")
-    nome_fazenda = st.text_input("Nome da Fazenda / Haras", "Fazenda Calunga", key=f"nome_fazenda_{st.session_state['reset_id']}")
-    nome_pista = st.text_input("Nome da Pista / Picadeiro", "Picadeiro Coberto", key=f"nome_pista_{st.session_state['reset_id']}")
-    dimensao_pista = st.text_input("Dimensão da Pista", "30x50m", key=f"dimensao_pista_{st.session_state['reset_id']}")
-    data_coleta = st.text_input("Data da Coleta", "04/06/2026", key=f"data_coleta_{st.session_state['reset_id']}")
+    nome_fazenda = st.text_input("Nome da Fazenda / Haras", "Fazenda Calunga", key=f"fazenda_{id_atual}")
+    nome_pista = st.text_input("Nome da Pista / Picadeiro", "Picadeiro Coberto", key=f"pista_{id_atual}")
+    dimensao_pista = st.text_input("Dimensão da Pista", "30x50m", key=f"dim_{id_atual}")
+    data_coleta = st.text_input("Data da Coleta", "04/06/2026", key=f"data_{id_atual}")
     
     st.divider()
     st.header("📐 Configuração da Grade")
-    n_linhas = st.number_input("Número de Linhas de Coleta (Eixo X)", min_value=2, max_value=10, value=4, step=1, key=f"n_linhas_{st.session_state['reset_id']}")
-    n_pontos = st.number_input("Pontos por Linha (Eixo Y)", min_value=2, max_value=10, value=5, step=1, key=f"n_pontos_{st.session_state['reset_id']}")
+    n_linhas = st.number_input("Número de Linhas de Coleta (Eixo X)", min_value=2, max_value=10, value=4, step=1, key=f"linhas_{id_atual}")
+    n_pontos = st.number_input("Pontos por Linha (Eixo Y)", min_value=2, max_value=10, value=5, step=1, key=f"pontos_{id_atual}")
     
     st.divider()
     st.header("⚙️ Foco do Relatório")
-    coletou_umidade = st.checkbox("Incluir Mapa de Umidade", value=True, key=f"coletou_umi_{st.session_state['reset_id']}")
-    coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True, key=f"coletou_esp_{st.session_state['reset_id']}")
+    coletou_umidade = st.checkbox("Incluir Mapa de Umidade", value=True, key=f"inc_umi_{id_atual}")
+    coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True, key=f"inc_esp_{id_atual}")
 
 # ==============================================================================
 # 2. ENTRADA DE DADOS - Dados Coletados
 # ==============================================================================
 st.header("📋 Dados Coletados")
 
-if st.button("🧹 Limpar Todos os Dados da Tela", type="secondary"):
-    limpar_dados()
+# BOTÃO DE RESET TOTAL DO CIRCUITO
+if st.button("🧹 Limpar Todos os Dados da Tela", type="secondary", help="Clique para forçar a limpeza completa de todos os números"):
+    reset_absoluto()
     st.rerun()
 
 st.markdown("Insira os valores coletados de forma direta para cada ponto da grade:")
@@ -71,17 +77,18 @@ for l_idx, aba in enumerate(abas):
             
             cols = st.columns(len(colunas_ativas))
             
-            with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=4.0, step=0.1, key=f"q1_{l}_{p}_{st.session_state['reset_id']}")
-            with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=5.5, step=0.1, key=f"q2_{l}_{p}_{st.session_state['reset_id']}")
-            with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=7.2, step=0.1, key=f"q3_{l}_{p}_{st.session_state['reset_id']}")
+            # Vinculando os inputs diretamente ao ID dinâmico absoluto
+            with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=4.0, step=0.1, key=f"q1_{l}_{p}_{id_atual}")
+            with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=5.5, step=0.1, key=f"q2_{l}_{p}_{id_atual}")
+            with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=7.2, step=0.1, key=f"q3_{l}_{p}_{id_atual}")
             
             umi, esp = 4.5, 12
             curr_idx = 3
             if coletou_umidade:
-                with cols[curr_idx]: umi = st.number_input("Umidade (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1, key=f"umi_{l}_{p}_{st.session_state['reset_id']}")
+                with cols[curr_idx]: umi = st.number_input("Umidade (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1, key=f"umi_{l}_{p}_{id_atual}")
                 curr_idx += 1
             if coletou_espessura:
-                with cols[curr_idx]: esp = st.number_input("Espessura (cm)", min_value=0, max_value=50, value=12, step=1, key=f"esp_{l}_{p}_{st.session_state['reset_id']}")
+                with cols[curr_idx]: esp = st.number_input("Espessura (cm)", min_value=0, max_value=50, value=12, step=1, key=f"esp_{l}_{p}_{id_atual}")
                 
             lista_dados.append({
                 "Haras": nome_fazenda, 
@@ -211,8 +218,6 @@ if not df_dados.empty:
         if st.button("✨ Gerar Relatório em PDF"):
             pdf = FPDF(orientation="P", unit="mm", format="A4")
             pdf.set_auto_page_break(auto=True, margin=15)
-            
-            # --- PÁGINA 1 ---
             pdf.add_page()
             
             if os.path.exists("logo.png"):
@@ -255,7 +260,6 @@ if not df_dados.empty:
             pdf.ln(2)
             pdf.image(img_penetro, x=15, w=180)
             
-            # --- PÁGINA 2: CORRIGIDA (As aspas e parênteses do título fechados perfeitamente) ---
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
                 if os.path.exists("logo.png"):
@@ -265,7 +269,6 @@ if not df_dados.empty:
                 pdf.set_text_color(50, 50, 50)
                 pdf.set_y(26)
                 pdf.set_font("Helvetica", "B", 11)
-                # CORREÇÃO DA LINHA 266: Texto finalizado e aspa fechada corretamente
                 pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
                 pdf.ln(4)
                 
