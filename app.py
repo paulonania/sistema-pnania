@@ -10,6 +10,14 @@ import os
 # CONFIGURAÇÃO DA PÁGINA WEB
 st.set_page_config(page_title="Sistema Pnania Premium", layout="wide")
 
+# ==============================================================================
+# FUNÇÃO DE LIMPEZA (RESET DA MEMÓRIA)
+# ==============================================================================
+def limpar_dados():
+    for key in list(st.session_state.keys()):
+        # Mantém apenas as configurações da malha se quiser, ou apaga tudo para resetar geral
+        del st.session_state[key]
+
 st.title("📊 Gerador de Relatórios — Método Pnania")
 st.markdown("Configure a malha de amostragem da pista e preencha os dados abaixo. O sistema gera os mapas contínuos na hora!")
 
@@ -18,25 +26,31 @@ st.markdown("Configure a malha de amostragem da pista e preencha os dados abaixo
 # ==============================================================================
 with st.sidebar:
     st.header("📋 Identificação do Relatório")
-    nome_fazenda = st.text_input("Nome da Fazenda / Haras", "Fazenda Calunga")
-    nome_pista = st.text_input("Nome da Pista / Picadeiro", "Picadeiro Coberto")
-    dimensao_pista = st.text_input("Dimensão da Pista", "30x50m")
-    data_coleta = st.text_input("Data da Coleta", "04/06/2026")
+    nome_fazenda = st.text_input("Nome da Fazenda / Haras", "Fazenda Calunga", key="nome_fazenda_input")
+    nome_pista = st.text_input("Nome da Pista / Picadeiro", "Picadeiro Coberto", key="nome_pista_input")
+    dimensao_pista = st.text_input("Dimensão da Pista", "30x50m", key="dimensao_pista_input")
+    data_coleta = st.text_input("Data da Coleta", "04/06/2026", key="data_coleta_input")
     
     st.divider()
     st.header("📐 Configuração da Grade")
-    n_linhas = st.number_input("Número de Linhas de Coleta (Eixo X)", min_value=2, max_value=10, value=4, step=1)
-    n_pontos = st.number_input("Pontos por Linha (Eixo Y)", min_value=2, max_value=10, value=5, step=1)
+    n_linhas = st.number_input("Número de Linhas de Coleta (Eixo X)", min_value=2, max_value=10, value=4, step=1, key="n_linhas_input")
+    n_pontos = st.number_input("Pontos por Linha (Eixo Y)", min_value=2, max_value=10, value=5, step=1, key="n_pontos_input")
     
     st.divider()
     st.header("⚙️ Foco do Relatório")
-    coletou_umidade = st.checkbox("Incluir Mapa de Umidade", value=True)
-    coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True)
+    coletou_umidade = st.checkbox("Incluir Mapa de Umidade", value=True, key="coletou_umidade_input")
+    coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True, key="coletou_espessura_input")
 
 # ==============================================================================
 # 2. ENTRADA DE DADOS - Dados Coletados
 # ==============================================================================
 st.header("📋 Dados Coletados")
+
+# BOTÃO MÁGICO DE LIMPEZA (Posicionado logo no topo dos dados para clique rápido)
+if st.button("🧹 Limpar Todos os Dados da Tela", type="secondary", help="Clique aqui para zerar a planilha antes de iniciar uma nova pista"):
+    limpar_dados()
+    st.rerun() # Recarrega o app com tudo zerado
+
 st.markdown("Insira os valores coletados de forma direta para cada ponto da grade:")
 
 lista_dados = []
@@ -52,18 +66,25 @@ for l_idx, aba in enumerate(abas):
             if coletou_umidade: colunas_ativas.append("Umidade (%)")
             if coletou_espessura: colunas_ativas.append("Espessura (cm)")
             
-            cols = st.columns(len(colunas_ativas))
-            with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=4.0, step=0.1, key=f"q1_{l}_{p}")
-            with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=5.5, step=0.1, key=f"q2_{l}_{p}")
-            with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=7.2, step=0.1, key=f"q3_{l}_{p}")
+            # Valores padrão seguros para inicialização limpa
+            val_q1 = st.session_state.get(f"q1_{l}_{p}", 4.0)
+            val_q2 = st.session_state.get(f"q2_{l}_{p}", 5.5)
+            val_q3 = st.session_state.get(f"q3_{l}_{p}", 7.2)
+            val_umi = st.session_state.get(f"umi_{l}_{p}", 4.5)
+            val_esp = st.session_state.get(f"esp_{l}_{p}", 12)
             
-            umi, esp = 4.5, 12
+            cols = st.columns(len(colunas_ativas))
+            with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=val_q1, step=0.1, key=f"q1_{l}_{p}")
+            with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=val_q2, step=0.1, key=f"q2_{l}_{p}")
+            with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=val_q3, step=0.1, key=f"q3_{l}_{p}")
+            
+            umi, esp = val_umi, val_esp
             curr_idx = 3
             if coletou_umidade:
-                with cols[curr_idx]: umi = st.number_input("Umidade (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1, key=f"umi_{l}_{p}")
+                with cols[curr_idx]: umi = st.number_input("Umidade (%)", min_value=0.0, max_value=100.0, value=val_umi, step=0.1, key=f"umi_{l}_{p}")
                 curr_idx += 1
             if coletou_espessura:
-                with cols[curr_idx]: esp = st.number_input("Espessura (cm)", min_value=0, max_value=50, value=12, step=1, key=f"esp_{l}_{p}")
+                with cols[curr_idx]: esp = st.number_input("Espessura (cm)", min_value=0, max_value=50, value=val_esp, step=1, key=f"esp_{l}_{p}")
                 
             lista_dados.append({
                 "Haras": nome_fazenda, 
@@ -97,9 +118,9 @@ if not df_dados.empty:
     umidade_media_geral = df_dados["Umidade"].mean()
     espessura_media_geral = round(df_dados["Espessura"].mean())
 
+    # GERAÇÃO DOS GRÁFICOS EM MEMÓRIA
     fases, verde_inf, verde_sup = ['Amortecimento', 'Transição', 'Suporte'], [3.5, 5.5, 7.0], [4.5, 6.5, 8.0]
     
-    # 1. Gráfico de Penetrômetro
     fig1, plt_ax1 = plt.subplots(figsize=(9, 6.5))
     plt_ax1.set_facecolor('#f4f4f6')
     x_indices = np.arange(len(fases))
@@ -139,7 +160,6 @@ if not df_dados.empty:
     plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
     img_penetro.seek(0)
 
-    # Preparação da malha dos mapas
     xi = np.linspace(1, n_linhas, 100)
     yi = np.linspace(1, n_pontos, 100)
     xi, yi = np.meshgrid(xi, yi)
@@ -176,9 +196,7 @@ if not df_dados.empty:
         plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
         img_umidade.seek(0)
 
-    # ==============================================================================
-    # EXIBIÇÃO NA TELA - Relatórios
-    # ==============================================================================
+    # EXIBIÇÃO NA TELA
     st.divider()
     st.header("📈 Relatórios")
     
@@ -186,14 +204,10 @@ if not df_dados.empty:
     with col_g1:
         st.pyplot(fig1)
     with col_g2:
-        if coletou_espessura: 
-            st.pyplot(fig2)
-        if coletou_umidade: 
-            st.pyplot(fig3)
+        if coletou_espessura: st.pyplot(fig2)
+        if coletou_umidade: st.pyplot(fig3)
 
-    # ==============================================================================
-    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (BLINDADO)
-    # ==============================================================================
+    # EMISSÃO DO PDF
     with st.sidebar:
         st.divider()
         st.header("📄 Emissão de Documento")
@@ -201,8 +215,6 @@ if not df_dados.empty:
         if st.button("✨ Gerar Relatório em PDF"):
             pdf = FPDF(orientation="P", unit="mm", format="A4")
             pdf.set_auto_page_break(auto=True, margin=15)
-            
-            # --- PÁGINA 1: Capa com Logo à Esquerda ---
             pdf.add_page()
             
             if os.path.exists("logo.png"):
@@ -236,21 +248,17 @@ if not df_dados.empty:
             pdf.cell(0, 7, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
             
             pdf.ln(8)
-            
             pdf.set_font("Helvetica", "B", 11)
             pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
             pdf.ln(2)
             pdf.image(img_penetro, x=15, w=180)
             
-            # --- PÁGINA 2: Apenas o Logo no Topo Esquerdo ---
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
                 if os.path.exists("logo.png"):
                     pdf.image("logo.png", x=10, y=8, w=25)
                 
-                pdf.set_draw_color(220, 222, 225)
                 pdf.line(10, 20, 200, 20)
-                
                 pdf.set_text_color(50, 50, 50)
                 pdf.set_y(26)
                 pdf.set_font("Helvetica", "B", 11)
