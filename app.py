@@ -51,8 +51,8 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("**Valores Gerais da Pista (Caso não colete por ponto):**")
-    global_umi = st.number_input("Umidade Geral Declarada (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1)
-    global_esp = st.number_input("Espessura Geral Declarada (cm)", min_value=0, max_value=50, value=12, step=1)
+    global_umi = st.number_input("Umidade Geral (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1)
+    global_esp = st.number_input("Espessura Geral (cm)", min_value=0, max_value=50, value=12, step=1)
 
 # ==============================================================================
 # 2. ENTRADA DE DADOS - Dados Coletados
@@ -104,6 +104,7 @@ if not df_dados.empty:
     med_suporte = df_dados["3ª Queda"].mean()
     medicao_atual = [med_amortecimento, med_transicao, med_suporte]
     
+    # IO individual por camada
     io_amort = (df_dados["1ª Queda"].std() / med_amortecimento) * 100 if med_amortecimento > 0 else 0.0
     io_trans = (df_dados["2ª Queda"].std() / med_transicao) * 100 if med_transicao > 0 else 0.0
     io_supor = (df_dados["3ª Queda"].std() / med_suporte) * 100 if med_suporte > 0 else 0.0
@@ -147,82 +148,4 @@ if not df_dados.empty:
         cellText=[dados_linha1, dados_linha2, dados_linha3], 
         rowLabels=['Faixa Ideal', 'Pista Atual', 'IO da Camada'], 
         colLabels=colunas_tab, 
-        rowColours=['#f2f7fa', '#ffffff', '#fcf8e3'], 
-        colColours=['#0f3a61']*len(colunas_tab), 
-        loc='bottom', cellLoc='center', bbox=[0.0, -0.30, 1.0, 0.18]
-    )
-    tabela.set_fontsize(9)
-    for (row, col), cell in tabela.get_celld().items():
-        if row == 0: cell.get_text().set_color('white'); cell.get_text().set_weight('bold')
-        if row > 0 and col >= 0: cell.get_text().set_weight('bold')
-    plt.subplots_adjust(bottom=0.26, top=0.88)
-    
-    img_penetro = io.BytesIO()
-    plt.savefig(
-        img_penetro, 
-        format='png', 
-        bbox_inches='tight', 
-        dpi=150
-    )
-    img_penetro.seek(0)
-
-    xi = np.linspace(1, n_linhas, 100)
-    yi = np.linspace(1, n_pontos, 100)
-    xi, yi = np.meshgrid(xi, yi)
-    
-    img_espessura = io.BytesIO()
-    if coletou_espessura:
-        zi_espessura = griddata((df_dados['X'], df_dados['Y']), df_dados['Espessura'], (xi, yi), method='cubic')
-        fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
-        mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
-        plt_ax2.set_title(f'MAPA DE ESPESSURA DA CAMADA (IO: {io_espessura:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
-        plt_ax2.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
-        plt_ax2.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
-        plt_ax2.set_yticks(range(1, n_pontos + 1))
-        plt_ax2.set_yticklabels([str(i) for i in range(1, n_pontos + 1)], fontsize=9, fontweight='bold')
-        plt_ax2.set_xticks(range(1, n_linhas + 1))
-        plt_ax2.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
-        fig2.colorbar(mapa1, ax=plt_ax2).set_label('Espessura (cm)', fontsize=9, fontweight='bold')
-        
-        # FATIADO COMPACTO PARA PREVENIR CORTES DO GITHUB
-        plt.savefig(
-            img_espessura, 
-            format='png', 
-            bbox_inches='tight', 
-            dpi=150
-        )
-        img_espessura.seek(0)
-
-    img_umidade = io.BytesIO()
-    if coletou_umidade:
-        zi_umidade = griddata((df_dados['X'], df_dados['Y']), df_dados['Umidade'], (xi, yi), method='cubic')
-        fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
-        mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
-        plt_ax3.set_title(f'MAPA DE UMIDADE DA PISTA (IO: {io_umidade:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
-        plt_ax3.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
-        plt_ax3.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
-        plt_ax3.set_yticks(range(1, n_pontos + 1))
-        plt_ax3.set_yticklabels([str(i) for i in range(1, n_pontos + 1)], fontsize=9, fontweight='bold')
-        plt_ax3.set_xticks(range(1, n_linhas + 1))
-        plt_ax3.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
-        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
-        
-        # FATIADO COMPACTO PARA PREVENIR CORTES DO GITHUB
-        plt.savefig(
-            img_umidade, 
-            format='png', 
-            bbox_inches='tight', 
-            dpi=150
-        )
-        img_umidade.seek(0)
-
-    # EXIBIÇÃO NA TELA
-    st.divider()
-    st.header("📈 Relatórios")
-    
-    col_g1, col_g2 = st.columns([1.2, 1.0])
-    with col_g1:
-        st.pyplot(fig1)
-    with col_g2:
-        if coletou_espessura: st.pyplot(fig2)
-        if
+        rowColours=
