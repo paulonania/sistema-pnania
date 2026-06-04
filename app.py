@@ -104,12 +104,10 @@ if not df_dados.empty:
     med_suporte = df_dados["3ª Queda"].mean()
     medicao_atual = [med_amortecimento, med_transicao, med_suporte]
     
-    # IO individual por camada do penetrômetro
     io_amort = (df_dados["1ª Queda"].std() / med_amortecimento) * 100 if med_amortecimento > 0 else 0.0
     io_trans = (df_dados["2ª Queda"].std() / med_transicao) * 100 if med_transicao > 0 else 0.0
     io_supor = (df_dados["3ª Queda"].std() / med_suporte) * 100 if med_suporte > 0 else 0.0
     
-    # IO isolados dos mapas de calor
     io_umidade = (df_dados["Umidade"].std() / df_dados["Umidade"].mean()) * 100 if df_dados["Umidade"].mean() > 0 and coletou_umidade else 0.0
     io_espessura = (df_dados["Espessura"].std() / df_dados["Espessura"].mean()) * 100 if df_dados["Espessura"].mean() > 0 and coletou_espessura else 0.0
     
@@ -140,7 +138,6 @@ if not df_dados.empty:
     plt.title(f"{nome_fazenda} — {nome_pista} — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
     plt_ax1.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#e0e0e0', fontsize=9)
     
-    # Tabela estruturada com o IO da camada
     colunas_tab = ['Amortecimento', 'Transição', 'Suporte', 'Umidade Pista', 'Espessura Méd.']
     dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}", f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}", f"{ideal_umi}", f"{ideal_esp}"]
     dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm"]
@@ -161,7 +158,12 @@ if not df_dados.empty:
     plt.subplots_adjust(bottom=0.26, top=0.88)
     
     img_penetro = io.BytesIO()
-    plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
+    plt.savefig(
+        img_penetro, 
+        format='png', 
+        bbox_inches='tight', 
+        dpi=150
+    )
     img_penetro.seek(0)
 
     xi = np.linspace(1, n_linhas, 100)
@@ -181,7 +183,14 @@ if not df_dados.empty:
         plt_ax2.set_xticks(range(1, n_linhas + 1))
         plt_ax2.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
         fig2.colorbar(mapa1, ax=plt_ax2).set_label('Espessura (cm)', fontsize=9, fontweight='bold')
-        plt.savefig(img_espessura, format='png', bbox_inches='tight', dpi=150)
+        
+        # FATIADO COMPACTO PARA PREVENIR CORTES DO GITHUB
+        plt.savefig(
+            img_espessura, 
+            format='png', 
+            bbox_inches='tight', 
+            dpi=150
+        )
         img_espessura.seek(0)
 
     img_umidade = io.BytesIO()
@@ -197,4 +206,23 @@ if not df_dados.empty:
         plt_ax3.set_xticks(range(1, n_linhas + 1))
         plt_ax3.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
         fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
-        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=
+        
+        # FATIADO COMPACTO PARA PREVENIR CORTES DO GITHUB
+        plt.savefig(
+            img_umidade, 
+            format='png', 
+            bbox_inches='tight', 
+            dpi=150
+        )
+        img_umidade.seek(0)
+
+    # EXIBIÇÃO NA TELA
+    st.divider()
+    st.header("📈 Relatórios")
+    
+    col_g1, col_g2 = st.columns([1.2, 1.0])
+    with col_g1:
+        st.pyplot(fig1)
+    with col_g2:
+        if coletou_espessura: st.pyplot(fig2)
+        if
