@@ -104,7 +104,7 @@ if not df_dados.empty:
     med_suporte = df_dados["3ª Queda"].mean()
     medicao_atual = [med_amortecimento, med_transicao, med_suporte]
     
-    # IO por camada
+    # IO individual por camada
     io_amort = (df_dados["1ª Queda"].std() / med_amortecimento) * 100 if med_amortecimento > 0 else 0.0
     io_trans = (df_dados["2ª Queda"].std() / med_transicao) * 100 if med_transicao > 0 else 0.0
     io_supor = (df_dados["3ª Queda"].std() / med_suporte) * 100 if med_suporte > 0 else 0.0
@@ -117,7 +117,8 @@ if not df_dados.empty:
 
     fases, verde_inf, verde_sup = ['Amortecimento', 'Transição', 'Suporte'], [3.5, 5.5, 7.0], [4.5, 6.5, 8.0]
     
-    fig1, plt_ax1 = plt.subplots(figsize=(9, 6.5))
+    # AJUSTADO O TAMANHO DA FIGURA PARA DAR ESPAÇO À NOVA LEGENDA LINEAR
+    fig1, plt_ax1 = plt.subplots(figsize=(9, 7.0))
     plt_ax1.set_facecolor('#f4f4f6')
     x_indices = np.arange(len(fases))
     plt_ax1.fill_between(x_indices, verde_inf, verde_sup, color='#e2f0d9', alpha=0.7, label='Método Pnania')
@@ -148,7 +149,7 @@ if not df_dados.empty:
     titulos_linhas = ['Faixa Ideal', 'Pista Atual', 'IO da Camada']
     cores_linhas = ['#f2f7fa', '#ffffff', '#fcf8e3']
     cores_colunas = ['#0f3a61'] * len(colunas_tab)
-    dimensoes_tabela = [0.0, -0.30, 1.0, 0.18]
+    dimensoes_tabela = [0.0, -0.26, 1.0, 0.16]
     
     tabela = plt.table(
         cellText=conteudo_celulas, 
@@ -164,7 +165,22 @@ if not df_dados.empty:
     for (row, col), cell in tabela.get_celld().items():
         if row == 0: cell.get_text().set_color('white'); cell.get_text().set_weight('bold')
         if row > 0 and col >= 0: cell.get_text().set_weight('bold')
-    plt.subplots_adjust(bottom=0.26, top=0.88)
+        
+    # NOVA LEGENDA LINEAR DE IO COM CORES ABAIXO DA TABELA
+    txt_legenda_io = (
+        "Legenda do Índice de Oscilação (IO):\n"
+        "  [ VERDE ] Excelente: < 10.0%   |   "
+        "[ AMARELO ] Alerta: 10.0% - 15.0%   |   "
+        "[ VERMELHO ] Crítico: > 15.0%"
+    )
+    fig1.text(
+        0.5, -0.18, txt_legenda_io, 
+        ha='center', va='center', fontsize=9.5, fontweight='bold',
+        color='#333333',
+        bbox=dict(boxstyle='round,pad=0.6', facecolor='#fafafa', edgecolor='#dcdcdc')
+    )
+    
+    plt.subplots_adjust(bottom=0.32, top=0.88)
     
     img_penetro = io.BytesIO()
     plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
@@ -206,9 +222,7 @@ if not df_dados.empty:
         plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
         img_umidade.seek(0)
 
-    # ==============================================================================
-    # EXIBIÇÃO DIRETA NA TELA RECUPERADA AQUI
-    # ==============================================================================
+    # EXIBIÇÃO NA TELA
     st.divider()
     st.header("📈 Relatórios de Desempenho")
     
@@ -255,72 +269,4 @@ if not df_dados.empty:
             pdf.set_font("Helvetica", "B", 9)
             pdf.cell(0, 6, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
             
-            pdf.set_font("Helvetica", "", 9)
-            pdf.cell(40, 6, " Pista / Picadeiro: ", border="L")
-            pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
-            
-            pdf.set_font("Helvetica", "", 9)
-            pdf.cell(40, 6, " Data da Coleta: ", border="LB")
-            pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
-            
-            if txt_obs:
-                pdf.ln(2)
-                pdf.set_font("Helvetica", "B", 9)
-                pdf.cell(40, 6, " Manejo Prévio: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
-                pdf.set_font("Helvetica", "", 9)
-                pdf.multi_cell(0, 6, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
-            
-            if txt_parecer:
-                pdf.ln(1)
-                pdf.set_font("Helvetica", "B", 9)
-                pdf.cell(40, 6, " Parecer Técnico: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
-                pdf.set_font("Helvetica", "", 9)
-                pdf.multi_cell(0, 6, f"{txt_parecer}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
-            
-            pdf.ln(4)
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
-            pdf.ln(1)
-            pdf.image(img_penetro, x=15, w=180)
-            
-            # --- PÁGINA 2: MAPAS ---
-            if coletou_espessura or coletou_umidade:
-                pdf.add_page()
-                if os.path.exists("logo.png"):
-                    pdf.image("logo.png", x=10, y=8, w=25)
-                
-                pdf.line(10, 20, 200, 20)
-                pdf.set_text_color(50, 50, 50)
-                pdf.set_y(26)
-                pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
-                pdf.ln(4)
-                
-                if coletou_espessura:
-                    pdf.image(img_espessura, x=35, w=140)
-                    pdf.ln(10)
-                if coletou_umidade:
-                    pdf.image(img_umidade, x=35, w=140)
-            
-            pdf_output = pdf.output()
-            st.download_button(
-                label="📥 Baixar Laudo Técnico (.PDF)", 
-                data=bytes(pdf_output), 
-                file_name=f"Relatorio_Desempenho_{nome_fazenda.replace(' ', '_')}.pdf", 
-                mime="application/pdf"
-            )
-
-        # Exportação limpa
-        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
-            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
-            "2ª Queda": "2ª Queda - Transição (cm)", 
-            "3ª Queda": "3ª Queda - Suporte (cm)", 
-            "Umidade": "Umidade TDR (%)", 
-            "Espessura": "Espessura da Camada (cm)"
-        })
-        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
-else:
-    st.warning("A planilha está vazia!")
+            pdf.set_font("Helvetica", "",
