@@ -104,7 +104,7 @@ if not df_dados.empty:
     med_suporte = df_dados["3ª Queda"].mean()
     medicao_atual = [med_amortecimento, med_transicao, med_suporte]
     
-    # IO individual por camada
+    # IO por camada
     io_amort = (df_dados["1ª Queda"].std() / med_amortecimento) * 100 if med_amortecimento > 0 else 0.0
     io_trans = (df_dados["2ª Queda"].std() / med_transicao) * 100 if med_transicao > 0 else 0.0
     io_supor = (df_dados["3ª Queda"].std() / med_suporte) * 100 if med_suporte > 0 else 0.0
@@ -139,5 +139,74 @@ if not df_dados.empty:
     plt.title(f"{nome_fazenda} — {nome_pista} — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
     plt_ax1.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#e0e0e0', fontsize=9)
     
-    colunas_tab = ['Amortecimento', 'Transição', 'Suporte', 'Umidade Pista', 'Espessura Méd.']
-    dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_
+    # FATIAMENTO MÁXIMO E ABSOLUTO DOS TEXTOS DA TABELA PARA IMPEDIR CORTES DO GITHUB
+    colunas_tab = [
+        'Amortecimento', 
+        'Transição', 
+        'Suporte', 
+        'Umidade Pista', 
+        'Espessura Méd.'
+    ]
+    
+    t_amo = f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}"
+    t_tra = f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}"
+    t_sup = f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}"
+    
+    dados_linha1 = [t_amo, t_tra, t_sup, f"{ideal_umi}", f"{ideal_esp}"]
+    dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm"]
+    dados_linha3 = [f"{io_amort:.1f}%", f"{io_trans:.1f}%", f"{io_supor:.1f}%", "-", "-"]
+    
+    conteudo_celulas = [dados_linha1, dados_linha2, dados_linha3]
+    titulos_linhas = ['Faixa Ideal', 'Pista Atual', 'IO da Camada']
+    cores_linhas = ['#f2f7fa', '#ffffff', '#fcf8e3']
+    cores_colunas = ['#0f3a61'] * len(colunas_tab)
+    dimensoes_tabela = [0.0, -0.26, 1.0, 0.16]
+    
+    tabela = plt.table(
+        cellText=conteudo_celulas, 
+        rowLabels=titulos_linhas, 
+        colLabels=colunas_tab, 
+        rowColours=cores_linhas, 
+        colColours=cores_colunas, 
+        loc='bottom', 
+        cellLoc='center', 
+        bbox=dimensoes_tabela
+    )
+    tabela.set_fontsize(9)
+    for (row, col), cell in tabela.get_celld().items():
+        if row == 0: cell.get_text().set_color('white'); cell.get_text().set_weight('bold')
+        if row > 0 and col >= 0: cell.get_text().set_weight('bold')
+        
+    txt_legenda_io = (
+        "Legenda do Índice de Oscilação (IO):\n"
+        "  [ VERDE ] Excelente: < 10.0%   |   "
+        "[ AMARELO ] Alerta: 10.0% - 15.0%   |   "
+        "[ VERMELHO ] Crítico: > 15.0%"
+    )
+    fig1.text(
+        0.5, -0.18, txt_legenda_io, 
+        ha='center', va='center', fontsize=9.5, fontweight='bold',
+        color='#333333',
+        bbox=dict(boxstyle='round,pad=0.6', facecolor='#fafafa', edgecolor='#dcdcdc')
+    )
+    
+    plt.subplots_adjust(bottom=0.32, top=0.88)
+    
+    img_penetro = io.BytesIO()
+    plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
+    img_penetro.seek(0)
+
+    xi = np.linspace(1, n_linhas, 100)
+    yi = np.linspace(1, n_pontos, 100)
+    xi, yi = np.meshgrid(xi, yi)
+    
+    img_espessura = io.BytesIO()
+    if coletou_espessura:
+        zi_espessura = griddata((df_dados['X'], df_dados['Y']), df_dados['Espessura'], (xi, yi), method='cubic')
+        fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
+        mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
+        plt_ax2.set_title(f'MAPA DE ESPESSURA DA CAMADA (IO: {io_espessura:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        plt_ax2.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
+        plt_ax2.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
+        plt_ax2.set_yticks(range(1, n_pontos + 1))
+        plt_ax2.set_yticklabels(
