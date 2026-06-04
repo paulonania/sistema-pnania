@@ -24,6 +24,11 @@ with st.sidebar:
     data_coleta = st.text_input("Data da Coleta", "04/06/2026")
     
     st.divider()
+    st.header("🎯 Parâmetros Ideais da Pista")
+    ideal_umi = st.text_input("Faixa Ideal de Umidade", "4.0% - 6.0%")
+    ideal_esp = st.text_input("Espessura Ideal (cm)", "12 cm")
+    
+    st.divider()
     st.header("📝 Notas de Consultoria")
     txt_obs = st.text_area(
         "Manejo Prévio (O que foi feito antes)", 
@@ -31,24 +36,30 @@ with st.sidebar:
     )
     txt_parecer = st.text_area(
         "Diagnóstico e Parecer Técnico",
-        "Ex: Após a escarificação a pista ficou muito solta, indicando a necessidade de passar o rastelo somente com os rolos pelo menos 2 vezes com sobreposição de 50% e com sentidos opostos."
+        "Ex: Após a escarificação a pista ficou muito solta, indicando a necessidade de passar o rastelo..."
     )
     
     st.divider()
     st.header("📐 Configuração da Grade")
-    n_linhas = st.number_input("Número de Linhas de Coleta (Eixo X)", min_value=2, max_value=10, value=4, step=1)
+    n_linhas = st.number_input("Número de Linhas (Eixo X)", min_value=2, max_value=10, value=4, step=1)
     n_pontos = st.number_input("Pontos por Linha (Eixo Y)", min_value=2, max_value=10, value=5, step=1)
     
     st.divider()
-    st.header("⚙️ Foco do Relatório")
-    coletou_umidade = st.checkbox("Incluir Mapa de Umidade", value=True)
-    coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True)
+    st.header("⚙️ Opções de Entrada de Dados")
+    coletou_umidade = st.checkbox("Coletar Umidade por Ponto", value=True)
+    coletou_espessura = st.checkbox("Coletar Espessura por Ponto", value=True)
+    
+    # NOVOS CAMPOS GLOBAIS CASO NÃO COLETE PONTO A PONTO
+    st.markdown("---")
+    st.markdown("**Valores Gerais da Pista (Caso não colete por ponto):**")
+    global_umi = st.number_input("Umidade Geral Declarada (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1)
+    global_esp = st.number_input("Espessura Geral Declarada (cm)", min_value=0, max_value=50, value=12, step=1)
 
 # ==============================================================================
 # 2. ENTRADA DE DADOS - Dados Coletados
 # ==============================================================================
 st.header("📋 Dados Coletados")
-st.markdown("Insira os valores coletados de forma direta para cada ponto da grade:")
+st.markdown("Insira os valores coletados para cada ponto da grade:")
 
 lista_dados = []
 abas = st.tabs([f"Linha {l}" for l in range(1, n_linhas + 1)])
@@ -64,11 +75,12 @@ for l_idx, aba in enumerate(abas):
             if coletou_espessura: colunas_ativas.append("Espessura (cm)")
             
             cols = st.columns(len(colunas_ativas))
-            with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=4.0, step=0.1, key=f"q1_{l}_{p}")
-            with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=5.5, step=0.1, key=f"q2_{l}_{p}")
-            with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=7.2, step=0.1, key=f"q3_{l}_{p}")
+            with cols[0]: q1 = st.number_input("1ª Queda", min_value=0.0, max_value=15.0, value=4.0, step=0.1, key=f"q1_{l}_{p}")
+            with cols[1]: q2 = st.number_input("2ª Queda", min_value=0.0, max_value=15.0, value=5.5, step=0.1, key=f"q2_{l}_{p}")
+            with cols[2]: q3 = st.number_input("3ª Queda", min_value=0.0, max_value=15.0, value=7.2, step=0.1, key=f"q3_{l}_{p}")
             
-            umi, esp = 4.5, 12
+            umi = global_umi
+            esp = global_esp
             curr_idx = 3
             if coletou_umidade:
                 with cols[curr_idx]: umi = st.number_input("Umidade (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1, key=f"umi_{l}_{p}")
@@ -95,8 +107,10 @@ if not df_dados.empty:
     
     todas_quedas = pd.concat([df_dados["1ª Queda"], df_dados["2ª Queda"], df_dados["3ª Queda"]])
     io_geral = (todas_quedas.std() / todas_quedas.mean()) * 100 if todas_quedas.mean() > 0 else 0
-    umidade_media_geral = df_dados["Umidade"].mean()
-    espessura_media_geral = round(df_dados["Espessura"].mean())
+    
+    # Se coletou por ponto, calcula a média real, senão usa o valor global declarado
+    umidade_media_geral = df_dados["Umidade"].mean() if coletou_umidade else global_umi
+    espessura_media_geral = round(df_dados["Espessura"].mean()) if coletou_espessura else global_esp
 
     fases, verde_inf, verde_sup = ['Amortecimento', 'Transição', 'Suporte'], [3.5, 5.5, 7.0], [4.5, 6.5, 8.0]
     
@@ -106,6 +120,8 @@ if not df_dados.empty:
     plt_ax1.fill_between(x_indices, verde_inf, verde_sup, color='#e2f0d9', alpha=0.7, label='Método Pnania')
     plt_ax1.plot(x_indices, verde_sup, color='#a9d08e', linestyle='--', linewidth=1.2)
     plt_ax1.plot(x_indices, verde_inf, color='#a9d08e', linestyle='--', linewidth=1.2)
+    
+    # REMOVIDO O IO DA LEGENDA DA PISTA CONFORME SOLICITADO
     plt_ax1.plot(x_indices, medicao_atual, color='#0f3a61', linewidth=3.5, marker='s', markersize=12, markerfacecolor='white', markeredgewidth=3, label=f"{nome_pista}")
     
     for i, txt in enumerate(medicao_atual):
@@ -122,13 +138,12 @@ if not df_dados.empty:
     plt.title(f"{nome_fazenda} — {nome_pista} — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
     plt_ax1.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#e0e0e0', fontsize=9)
     
-    colunas_tab = ['Amortecimento', 'Transição', 'Suporte']
-    dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}", f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}"]
-    dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}"]
-    if coletou_umidade: colunas_tab.append('Umidade Geral'); dados_linha1.append('-'); dados_linha2.append(f"{umidade_media_geral:.1f}%")
-    if coletou_espessura: colunas_tab.append('Espessura Méd.'); dados_linha1.append('-'); dados_linha2.append(f"{espessura_media_geral} cm")
+    # ADICIONADO O IO DA PISTA JUNTO DA TABELA GERAL
+    colunas_tab = ['Amortecimento', 'Transição', 'Suporte', 'Umidade Pista', 'Espessura Méd.', 'IO Geral']
+    dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}", f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}", f"{ideal_umi}", f"{ideal_esp}", "-"]
+    dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm", f"{io_geral:.1f}%"]
     
-    tabela = plt.table(cellText=[dados_linha1, dados_linha2], rowLabels=['Faixa Ideal (cm)', f'Pista (IO: {io_geral:.1f}%)'], colLabels=colunas_tab, rowColours=['#f2f7fa', '#ffffff'], colColours=['#0f3a61']*len(colunas_tab), loc='bottom', cellLoc='center', bbox=[0.0, -0.24, 1.0, 0.14])
+    tabela = plt.table(cellText=[dados_linha1, dados_linha2], rowLabels=['Faixa Ideal', 'Pista Atual'], colLabels=colunas_tab, rowColours=['#f2f7fa', '#ffffff'], colColours=['#0f3a61']*len(colunas_tab), loc='bottom', cellLoc='center', bbox=[0.0, -0.24, 1.0, 0.14])
     tabela.set_fontsize(9)
     for (row, col), cell in tabela.get_celld().items():
         if row == 0: cell.get_text().set_color('white'); cell.get_text().set_weight('bold')
@@ -204,8 +219,6 @@ if not df_dados.empty:
             
             pdf.set_font("Helvetica", "B", 18)
             pdf.set_text_color(15, 58, 97)
-            
-            # NOVO TÍTULO ATUALIZADO AQUI
             pdf.cell(0, 12, "RELATÓRIO DE DESEMPENHO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
             
             pdf.set_draw_color(220, 222, 225)
@@ -254,6 +267,7 @@ if not df_dados.empty:
             pdf.ln(1)
             pdf.image(img_penetro, x=15, w=180)
             
+            # --- PÁGINA 2: MAPAS ---
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
                 if os.path.exists("logo.png"):
