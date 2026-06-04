@@ -1,4 +1,4 @@
-import streamlit st
+import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -214,65 +214,4 @@ if not df_dados.empty:
             pdf.set_text_color(50, 50, 50)
             pdf.set_fill_color(245, 247, 250)
             pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 7, "  DADOS DA PROPRIEDADE E DA COLETA".encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
-            
-            pdf.set_font("Helvetica", "", 10)
-            pdf.cell(45, 7, " Fazenda / Haras: ", border="LT")
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
-            
-            pdf.set_font("Helvetica", "", 10)
-            pdf.cell(45, 7, " Pista / Picadeiro: ", border="L")
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
-            
-            pdf.set_font("Helvetica", "", 10)
-            pdf.cell(45, 7, " Data da Coleta: ", border="LB")
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
-            
-            pdf.ln(8)
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
-            pdf.ln(2)
-            pdf.image(img_penetro, x=15, w=180)
-            
-            # --- PÁGINA 2: Apenas o Logo ---
-            if coletou_espessura or coletou_umidade:
-                pdf.add_page()
-                if os.path.exists("logo.png"):
-                    pdf.image("logo.png", x=10, y=8, w=25)
-                
-                pdf.line(10, 20, 200, 20)
-                pdf.set_text_color(50, 50, 50)
-                pdf.set_y(26)
-                pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
-                pdf.ln(4)
-                
-                if coletou_espessura:
-                    pdf.image(img_espessura, x=35, w=140)
-                    pdf.ln(10)
-                if coletou_umidade:
-                    pdf.image(img_umidade, x=35, w=140)
-            
-            pdf_output = pdf.output()
-            st.download_button(
-                label="📥 Baixar Laudo Técnico (.PDF)", 
-                data=bytes(pdf_output), 
-                file_name=f"Laudo_Tecnico_{nome_fazenda.replace(' ', '_')}.pdf", 
-                mime="application/pdf"
-            )
-
-        # Botão de CSV organizado
-        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
-            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
-            "2ª Queda": "2ª Queda - Transição (cm)", 
-            "3ª Queda": "3ª Queda - Suporte (cm)", 
-            "Umidade": "Umidade TDR (%)", 
-            "Espessura": "Espessura da Camada (cm)"
-        })
-        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
-else:
-    st.warning("A planilha está vazia!")
+            pdf.cell(0, 7, "  DADOS DA PROPRIEDADE E DA COLETA".encode('latin-1', 'replace').decode('latin-1'), ln=True
