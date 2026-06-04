@@ -198,7 +198,7 @@ if not df_dados.empty:
         if coletou_umidade: st.image(img_umidade, use_container_width=True)
 
     # ==============================================================================
-    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (COM SUPORTE A LOGO DINÂMICA)
+    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (SEM SUBTÍTULO)
     # ==============================================================================
     with st.sidebar:
         st.divider()
@@ -211,32 +211,27 @@ if not df_dados.empty:
             # --- PÁGINA 1: Capa e Gráfico de Penetrômetro ---
             pdf.add_page()
             
-            # Cabeçalho Técnico Elegante (Azul Pnania)
-            pdf.set_fill_color(15, 58, 97)
-            pdf.rect(0, 0, 210, 38, "F")
-            
-            # SE A LOGO EXISTIR NO REPOSITÓRIO, INSERE E REORGANIZA O TEXTO NA ESQUERDA
+            # Cabeçalho limpo em fundo branco com logo imponente de 45mm
             if os.path.exists("logo.png"):
-                # Insere a logo no canto direito superior (largura de 32mm automático)
-                pdf.image("logo.png", x=165, y=5, w=32)
+                pdf.image("logo.png", x=150, y=10, w=45)
                 
-                # Alinha textos à esquerda para dar espaço à logo
-                pdf.set_y(7)
-                pdf.set_font("Helvetica", "B", 14)
-                pdf.set_text_color(255, 255, 255)
-                pdf.cell(150, 8, "LAUDO TÉCNICO DE AVALIAÇÃO ESTRUTURAL".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
-                pdf.set_font("Helvetica", "", 10)
-                pdf.cell(150, 6, "MÉTODO PAULO NANIA — ENGENHARIA EQUESTRE".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
+                # Alinhamento do título principal à esquerda (Subtítulo removido)
+                pdf.set_y(15)
+                pdf.set_font("Helvetica", "B", 20)
+                pdf.set_text_color(15, 58, 97) # Azul Pnania
+                pdf.cell(130, 10, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
             else:
-                # Caso não tenha subido a logo ainda, centraliza o texto padrão
-                pdf.set_y(8)
-                pdf.set_font("Helvetica", "B", 15)
-                pdf.set_text_color(255, 255, 255)
-                pdf.cell(0, 8, "LAUDO TÉCNICO DE AVALIAÇÃO ESTRUTURAL".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
-                pdf.set_font("Helvetica", "", 11)
-                pdf.cell(0, 6, "MÉTODO PAULO NANIA — ENGENHARIA DE SUPERFÍCIES EQUESTRES".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+                # Caso sem logo, apenas centraliza o título principal
+                pdf.set_y(15)
+                pdf.set_font("Helvetica", "B", 20)
+                pdf.set_text_color(15, 58, 97)
+                pdf.cell(0, 10, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
             
-            pdf.set_y(46)
+            # Linha fina horizontal cinza divisória
+            pdf.set_draw_color(220, 222, 225)
+            pdf.line(10, 36, 200, 36)
+            
+            pdf.set_y(44)
             
             # Quadro de Identificação da Propriedade
             pdf.set_text_color(50, 50, 50)
@@ -271,22 +266,25 @@ if not df_dados.empty:
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
                 
-                # Mini cabeçalho da página 2 com espaço para a logo pequena
-                pdf.rect(0, 0, 210, 15, "F")
-                pdf.set_font("Helvetica", "B", 10)
-                pdf.set_text_color(255, 255, 255)
-                pdf.set_y(4)
-                
+                # Mini cabeçalho sutil da página 2 (Fundo branco com linha cinza)
                 if os.path.exists("logo.png"):
-                    pdf.image("logo.png", x=180, y=2, w=18)
-                    pdf.cell(160, 6, f"RELATÓRIO DE MAPEAMENTO CONTÍNUO — {nome_fazenda.upper()}".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
+                    pdf.image("logo.png", x=175, y=6, w=25)
+                    pdf.set_y(8)
+                    pdf.set_font("Helvetica", "B", 12)
+                    pdf.set_text_color(15, 58, 97)
+                    pdf.cell(160, 6, f"MAPEAMENTO CONTÍNUO DE CAMPO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
                 else:
-                    pdf.cell(0, 6, f"RELATÓRIO DE MAPEAMENTO CONTÍNUO — {nome_fazenda.upper()}".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+                    pdf.set_y(8)
+                    pdf.set_font("Helvetica", "B", 12)
+                    pdf.set_text_color(15, 58, 97)
+                    pdf.cell(0, 6, f"MAPEAMENTO CONTÍNUO DE CAMPO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+                
+                pdf.line(10, 16, 200, 16)
                 
                 pdf.set_text_color(50, 50, 50)
                 pdf.set_y(25)
                 pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Campo".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor", ln=True)
                 pdf.ln(4)
                 
                 if coletou_espessura:
