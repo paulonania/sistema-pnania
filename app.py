@@ -23,10 +23,16 @@ with st.sidebar:
     dimensao_pista = st.text_input("Dimensão da Pista", "30x50m")
     data_coleta = st.text_input("Data da Coleta", "04/06/2026")
     
-    # NOVO CAMPO DE OBSERVAÇÃO SOLICITADO
+    st.divider()
+    st.header("📝 Notas de Consultoria")
     txt_obs = st.text_area(
-        "Observações de Campo", 
-        "Ex: Irrigado por 10 minutos, passou o rastelo com as hastes a 2 polegadas de profundidade."
+        "Manejo Prévio (O que foi feito antes)", 
+        "Ex: Irrigado por 10 minutos, passou o rastelo com as hastes a 2 polegadas."
+    )
+    # NOVO CAMPO: DIAGNÓSTICO / PARECER TÉCNICO
+    txt_parecer = st.text_area(
+        "Diagnóstico e Parecer Técnico",
+        "Ex: Após a escarificação a pista ficou muito solta, indicando a necessidade de passar o rastelo somente com os rolos pelo menos 2 vezes com sobreposição de 50% e com sentidos opostos."
     )
     
     st.divider()
@@ -181,7 +187,7 @@ if not df_dados.empty:
         if coletou_espessura: st.pyplot(fig2)
         if coletou_umidade: st.pyplot(fig3)
 
-    # EMISSÃO DO LAUDO EM PDF
+    # EMISSÃO DO LAUDO EM PDF (LIMITADO A 2 PÁGINAS)
     with st.sidebar:
         st.divider()
         st.header("📄 Emissão de Documento")
@@ -203,44 +209,53 @@ if not df_dados.empty:
             
             pdf.set_draw_color(220, 222, 225)
             pdf.line(10, 48, 200, 48)
-            pdf.set_y(54)
+            pdf.set_y(52)
             
             pdf.set_text_color(50, 50, 50)
             pdf.set_fill_color(245, 247, 250)
-            pdf.set_font("Helvetica", "B", 11)
+            pdf.set_font("Helvetica", "B", 10)
             
             txt_quadro = "  DADOS DA PROPRIEDADE E DA COLETA"
-            pdf.cell(0, 7, txt_quadro.encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
+            pdf.cell(0, 6, txt_quadro.encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
             
-            pdf.set_font("Helvetica", "", 10)
-            pdf.cell(45, 7, " Fazenda / Haras: ", border="LT")
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 6, " Fazenda / Haras: ", border="LT")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
             
-            pdf.set_font("Helvetica", "", 10)
-            pdf.cell(45, 7, " Pista / Picadeiro: ", border="L")
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 6, " Pista / Picadeiro: ", border="L")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
             
-            pdf.set_font("Helvetica", "", 10)
-            pdf.cell(45, 7, " Data da Coleta: ", border="LB")
-            pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 6, " Data da Coleta: ", border="LB")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
             
-            # IMPRESSÃO DO CAMPO DE OBSERVAÇÕES NO PDF
+            # IMPRESSÃO DO MANEJO PRÉVIO (COMPACTADO PARA NÃO ESTOURAR A PÁGINA)
             if txt_obs:
-                pdf.ln(3)
-                pdf.set_font("Helvetica", "B", 10)
-                pdf.cell(45, 7, " Condições/Manejo: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
-                pdf.set_font("Helvetica", "", 10)
-                pdf.multi_cell(0, 7, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+                pdf.ln(2)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.cell(40, 6, " Manejo Prévio: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 9)
+                pdf.multi_cell(0, 6, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
             
-            pdf.ln(6)
+            # IMPRESSÃO DO PARECER TÉCNICO / DIAGNÓSTICO
+            if txt_parecer:
+                pdf.ln(1)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.cell(40, 6, " Parecer Técnico: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 9)
+                pdf.multi_cell(0, 6, f"{txt_parecer}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+            
+            pdf.ln(4)
             pdf.set_font("Helvetica", "B", 11)
             pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
-            pdf.ln(2)
+            pdf.ln(1)
             pdf.image(img_penetro, x=15, w=180)
             
+            # --- PÁGINA 2: MAPAS ---
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
                 if os.path.exists("logo.png"):
