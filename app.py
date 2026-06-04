@@ -34,15 +34,15 @@ with st.sidebar:
     coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True)
 
 # ==============================================================================
-# 2. FORMULÁRIO DE ENTRADA DE DADOS - PROTEGIDO CONTRA CONFLITOS de CACHE
+# 2. FORMULÁRIO DE ENTRADA DE DADOS - INICIALIZAÇÃO ZERADA
 # ==============================================================================
 st.header("📋 Dados Coletados")
-st.markdown("Preencha as abas de cada linha abaixo. Para zerar tudo, basta recarregar a página do navegador.")
+st.markdown("Preencha as abas de cada linha abaixo. Para zerar tudo, basta atualizar a página (F5) no seu tablet ou notebook.")
 
 lista_dados = []
 
-# Encapsula toda a entrada de dados em um Form oficial do Streamlit
-with st.form("formulario_coleta", clear_on_submit=False):
+# Formulário oficial que isola o cache das caixas numéricas
+with st.form("formulario_coleta"):
     
     abas = st.tabs([f"Linha {l}" for l in range(1, n_linhas + 1)])
 
@@ -58,7 +58,7 @@ with st.form("formulario_coleta", clear_on_submit=False):
                 
                 cols = st.columns(len(colunas_ativas))
                 
-                # Valores base zerados ou mínimos para você saber que precisa preencher
+                # Valores iniciais em 0.0 para garantir uma planilha limpa de cara
                 with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=0.0, step=0.1, key=f"q1_{l}_{p}")
                 with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=0.0, step=0.1, key=f"q2_{l}_{p}")
                 with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=0.0, step=0.1, key=f"q3_{l}_{p}")
@@ -78,15 +78,12 @@ with st.form("formulario_coleta", clear_on_submit=False):
                 })
 
     st.markdown("---")
-    # Botão de envio oficial que dispara o processamento dos mapas de uma vez só
     disparar_calculos = st.form_submit_button("🚀 Processar e Atualizar Relatórios", type="primary")
 
 # ==============================================================================
-# 3. PROCESSAMENTO E GERAÇÃO DOS GRÁFICOS (SÓ RODA SE CLICAR NO BOTÃO DO FORM)
+# 3. PROCESSAMENTO E GERAÇÃO DOS GRÁFICOS
 # ==============================================================================
 df_dados = pd.DataFrame(lista_dados)
-
-# Verifica se o usuário inseriu dados reais (se a soma das quedas não é zero)
 dados_inseridos = df_dados["1ª Queda"].sum() > 0
 
 if disparar_calculos and dados_inseridos:
@@ -177,7 +174,7 @@ if disparar_calculos and dados_inseridos:
         plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
         img_umidade.seek(0)
 
-    # EXIBIÇÃO DOS RELATÓRIOS NA TELA
+    # EXIBIÇÃO NA TELA
     st.divider()
     st.header("📈 Relatórios")
     
@@ -188,10 +185,29 @@ if disparar_calculos and dados_inseridos:
         if coletou_espessura: st.pyplot(fig2)
         if coletou_umidade: st.pyplot(fig3)
 
-    # EMISSÃO DO LAUDO EM PDF (BARRA LATERAL)
+    # EMISSÃO DO PDF (PARÊNTESE DA LINHA 197 CORRIGIDO)
     with st.sidebar:
         st.divider()
         st.header("📄 Emissão de Documento")
         
         if st.button("✨ Gerar Relatório em PDF"):
-            pdf = FPDF(orientation="P",
+            # CORREÇÃO CRÍTICA: Parêntese fechado corretamente na linha abaixo!
+            pdf = FPDF(orientation="P", unit="mm", format="A4")
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.add_page()
+            
+            if os.path.exists("logo.png"):
+                pdf.image("logo.png", x=10, y=10, w=45)
+                pdf.set_y(34)
+            else:
+                pdf.set_y(15)
+            
+            pdf.set_font("Helvetica", "B", 22)
+            pdf.set_text_color(15, 58, 97)
+            pdf.cell(0, 12, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+            
+            pdf.set_draw_color(220, 222, 225)
+            pdf.line(10, 48, 200, 48)
+            pdf.set_y(54)
+            
+            pdf.set_text_color(50, 50,
