@@ -11,54 +11,43 @@ import os
 st.set_page_config(page_title="Sistema Pnania Premium", layout="wide")
 
 # ==============================================================================
-# CONTROLE DE RESET ABSOLUTO (CRIANDO UMA NOVA PLANILHA LIMPA)
+# FUNÇÃO DE LIMPEZA DIRETA NA MEMÓRIA NATIVA
 # ==============================================================================
-if "grade_id" not in st.session_state:
-    st.session_state["grade_id"] = 1000
-
-def reset_absoluto():
-    # Varre e deleta absolutamente toda a memória ativa do app
+def acao_limpar():
+    # Deleta absolutamente todas as chaves guardadas na memória do app
     for key in list(st.session_state.keys()):
-        if key != "grade_id":
-            del st.session_state[key]
-    # Muda o ID da grade. Isso força o navegador a destruir os campos velhos
-    st.session_state["grade_id"] += 1
+        del st.session_state[key]
 
 st.title("📊 Gerador de Relatórios — Método Pnania")
 st.markdown("Configure a malha de amostragem da pista e preencha os dados abaixo. O sistema gera os mapas contínuos na hora!")
-
-# ID atual do circuito de coleta
-id_atual = st.session_state["grade_id"]
 
 # ==============================================================================
 # 1. IDENTIFICAÇÃO E CONFIGURAÇÃO DA MALHA (BARRA LATERAL)
 # ==============================================================================
 with st.sidebar:
     st.header("📋 Identificação do Relatório")
-    nome_fazenda = st.text_input("Nome da Fazenda / Haras", "Fazenda Calunga", key=f"fazenda_{id_atual}")
-    nome_pista = st.text_input("Nome da Pista / Picadeiro", "Picadeiro Coberto", key=f"pista_{id_atual}")
-    dimensao_pista = st.text_input("Dimensão da Pista", "30x50m", key=f"dim_{id_atual}")
-    data_coleta = st.text_input("Data da Coleta", "04/06/2026", key=f"data_{id_atual}")
+    nome_fazenda = st.text_input("Nome da Fazenda / Haras", "Fazenda Calunga", key="fazenda")
+    nome_pista = st.text_input("Nome da Pista / Picadeiro", "Picadeiro Coberto", key="pista")
+    dimensao_pista = st.text_input("Dimensão da Pista", "30x50m", key="dim")
+    data_coleta = st.text_input("Data da Coleta", "04/06/2026", key="data")
     
     st.divider()
     st.header("📐 Configuração da Grade")
-    n_linhas = st.number_input("Número de Linhas de Coleta (Eixo X)", min_value=2, max_value=10, value=4, step=1, key=f"linhas_{id_atual}")
-    n_pontos = st.number_input("Pontos por Linha (Eixo Y)", min_value=2, max_value=10, value=5, step=1, key=f"pontos_{id_atual}")
+    n_linhas = st.number_input("Número de Linhas de Coleta (Eixo X)", min_value=2, max_value=10, value=4, step=1, key="linhas")
+    n_pontos = st.number_input("Pontos por Linha (Eixo Y)", min_value=2, max_value=10, value=5, step=1, key="pontos")
     
     st.divider()
     st.header("⚙️ Foco do Relatório")
-    coletou_umidade = st.checkbox("Incluir Mapa de Umidade", value=True, key=f"inc_umi_{id_atual}")
-    coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True, key=f"inc_esp_{id_atual}")
+    coletou_umidade = st.checkbox("Incluir Mapa de Umidade", value=True, key="inc_umi")
+    coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True, key="inc_esp")
 
 # ==============================================================================
 # 2. ENTRADA DE DADOS - Dados Coletados
 # ==============================================================================
 st.header("📋 Dados Coletados")
 
-# BOTÃO DE RESET TOTAL DO CIRCUITO
-if st.button("🧹 Limpar Todos os Dados da Tela", type="secondary", help="Clique para forçar a limpeza completa de todos os números"):
-    reset_absoluto()
-    st.rerun()
+# BOTÃO COM ATIVADOR NATIVO (on_click): Limpa tudo antes de rodar qualquer outra linha
+st.button("🧹 Limpar Todos os Dados da Tela", type="secondary", on_click=acao_limpar)
 
 st.markdown("Insira os valores coletados de forma direta para cada ponto da grade:")
 
@@ -77,18 +66,18 @@ for l_idx, aba in enumerate(abas):
             
             cols = st.columns(len(colunas_ativas))
             
-            # Vinculando os inputs diretamente ao ID dinâmico absoluto
-            with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=4.0, step=0.1, key=f"q1_{l}_{p}_{id_atual}")
-            with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=5.5, step=0.1, key=f"q2_{l}_{p}_{id_atual}")
-            with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=7.2, step=0.1, key=f"q3_{l}_{p}_{id_atual}")
+            # Inputs limpos associados a chaves estáticas que serão esvaziadas pelo acao_limpar
+            with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=4.0, step=0.1, key=f"q1_{l}_{p}")
+            with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=5.5, step=0.1, key=f"q2_{l}_{p}")
+            with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=7.2, step=0.1, key=f"q3_{l}_{p}")
             
             umi, esp = 4.5, 12
             curr_idx = 3
             if coletou_umidade:
-                with cols[curr_idx]: umi = st.number_input("Umidade (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1, key=f"umi_{l}_{p}_{id_atual}")
+                with cols[curr_idx]: umi = st.number_input("Umidade (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1, key=f"umi_{l}_{p}")
                 curr_idx += 1
             if coletou_espessura:
-                with cols[curr_idx]: esp = st.number_input("Espessura (cm)", min_value=0, max_value=50, value=12, step=1, key=f"esp_{l}_{p}_{id_atual}")
+                with cols[curr_idx]: esp = st.number_input("Espessura (cm)", min_value=0, max_value=50, value=12, step=1, key=f"esp_{l}_{p}")
                 
             lista_dados.append({
                 "Haras": nome_fazenda, 
@@ -189,6 +178,7 @@ if not df_dados.empty:
         fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
         mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
         plt_ax3.set_title('MAPA DE UMIDADE DA PISTA (%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        st.write("") # Pequeno espaçamento de segurança
         plt_ax3.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
         plt_ax3.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
         plt_ax3.set_yticks(range(1, n_pontos + 1))
@@ -258,43 +248,3 @@ if not df_dados.empty:
             pdf.set_font("Helvetica", "B", 11)
             pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
             pdf.ln(2)
-            pdf.image(img_penetro, x=15, w=180)
-            
-            if coletou_espessura or coletou_umidade:
-                pdf.add_page()
-                if os.path.exists("logo.png"):
-                    pdf.image("logo.png", x=10, y=8, w=25)
-                
-                pdf.line(10, 20, 200, 20)
-                pdf.set_text_color(50, 50, 50)
-                pdf.set_y(26)
-                pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
-                pdf.ln(4)
-                
-                if coletou_espessura:
-                    pdf.image(img_espessura, x=35, w=140)
-                    pdf.ln(10)
-                if coletou_umidade:
-                    pdf.image(img_umidade, x=35, w=140)
-            
-            pdf_output = pdf.output()
-            st.download_button(
-                label="📥 Baixar Laudo Técnico (.PDF)", 
-                data=bytes(pdf_output), 
-                file_name=f"Laudo_Tecnico_{nome_fazenda.replace(' ', '_')}.pdf", 
-                mime="application/pdf"
-            )
-
-        # Botão de CSV
-        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
-            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
-            "2ª Queda": "2ª Queda - Transição (cm)", 
-            "3ª Queda": "3ª Queda - Suporte (cm)", 
-            "Umidade": "Umidade TDR (%)", 
-            "Espessura": "Espessura da Camada (cm)"
-        })
-        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
-else:
-    st.warning("A planilha está vazia!")
