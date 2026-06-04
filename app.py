@@ -58,7 +58,6 @@ with st.form("formulario_coleta"):
                 
                 cols = st.columns(len(colunas_ativas))
                 
-                # Valores iniciais em 0.0 para garantir uma planilha limpa de cara
                 with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=0.0, step=0.1, key=f"q1_{l}_{p}")
                 with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=0.0, step=0.1, key=f"q2_{l}_{p}")
                 with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=0.0, step=0.1, key=f"q3_{l}_{p}")
@@ -170,4 +169,101 @@ if disparar_calculos and dados_inseridos:
         plt_ax3.set_yticklabels([str(i) for i in range(1, n_pontos + 1)], fontsize=9, fontweight='bold')
         plt_ax3.set_xticks(range(1, n_linhas + 1))
         plt_ax3.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
-        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize
+        # CORREÇÃO DA LINHA 173: Comando do colorbar perfeitamente fechado e alinhado em linha única
+        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
+        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
+        img_umidade.seek(0)
+
+    # EXIBIÇÃO NA TELA
+    st.divider()
+    st.header("📈 Relatórios")
+    
+    col_g1, col_g2 = st.columns([1.2, 1.0])
+    with col_g1:
+        st.pyplot(fig1)
+    with col_g2:
+        if coletou_espessura: st.pyplot(fig2)
+        if coletou_umidade: st.pyplot(fig3)
+
+    # EMISSÃO DO PDF (TOTALMENTE BLINDADO CONTRA UNICODE E CARACTERES ESPECIAIS)
+    with st.sidebar:
+        st.divider()
+        st.header("📄 Emissão de Documento")
+        
+        if st.button("✨ Gerar Relatório em PDF"):
+            pdf = FPDF(orientation="P", unit="mm", format="A4")
+            pdf.set_auto_page_break(auto=True, margin=15)
+            
+            # --- PÁGINA 1: Capa ---
+            pdf.add_page()
+            
+            if os.path.exists("logo.png"):
+                pdf.image("logo.png", x=10, y=10, w=45)
+                pdf.set_y(34)
+            else:
+                pdf.set_y(15)
+            
+            pdf.set_font("Helvetica", "B", 22)
+            pdf.set_text_color(15, 58, 97)
+            pdf.cell(0, 12, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+            
+            pdf.set_draw_color(220, 222, 225)
+            pdf.line(10, 48, 200, 48)
+            pdf.set_y(54)
+            
+            pdf.set_text_color(50, 50, 50)
+            pdf.set_fill_color(245, 247, 250)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(0, 7, "  DADOS DA PROPRIEDADE E DA COLETA".encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
+            
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(45, 7, " Fazenda / Haras: ", border="LT")
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 7, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
+            
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(45, 7, " Pista / Picadeiro: ", border="L")
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 7, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
+            
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(45, 7, " Data da Coleta: ", border="LB")
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 7, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
+            
+            pdf.ln(8)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+            pdf.ln(2)
+            pdf.image(img_penetro, x=15, w=180)
+            
+            # --- PÁGINA 2: Mapas ---
+            if coletou_espessura or coletou_umidade:
+                pdf.add_page()
+                if os.path.exists("logo.png"):
+                    pdf.image("logo.png", x=10, y=8, w=25)
+                
+                pdf.line(10, 20, 200, 20)
+                pdf.set_text_color(50, 50, 50)
+                pdf.set_y(26)
+                pdf.set_font("Helvetica", "B", 11)
+                # CORREÇÃO DA ANTIGA LINHA 221: Texto limpo e sem risco de erro de codificação
+                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+                pdf.ln(4)
+                
+                if coletou_espessura:
+                    pdf.image(img_espessura, x=35, w=140)
+                    pdf.ln(10)
+                if coletou_umidade:
+                    pdf.image(img_umidade, x=35, w=140)
+            
+            pdf_output = pdf.output()
+            st.download_button(
+                label="📥 Baixar Laudo Técnico (.PDF)", 
+                data=bytes(pdf_output), 
+                file_name=f"Laudo_Tecnico_{nome_fazenda.replace(' ', '_')}.pdf", 
+                mime="application/pdf"
+            )
+
+        # Botão de CSV
+        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
