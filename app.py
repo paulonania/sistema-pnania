@@ -33,9 +33,9 @@ with st.sidebar:
     coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True)
 
 # ==============================================================================
-# 2. ENTRADA DE DADOS - ALTERADO PARA: dados coletados
+# 2. ENTRADA DE DADOS - ALTERADO PARA: Dados Coletados
 # ==============================================================================
-st.header("📋 dados coletados")
+st.header("📋 Dados Coletados")
 st.markdown("Insira os valores coletados de forma direta para cada ponto da grade:")
 
 lista_dados = []
@@ -184,10 +184,10 @@ if not df_dados.empty:
         plt.close(fig3)
 
     # ==============================================================================
-    # EXIBIÇÃO NA TELA - ALTERADO PARA: relatorios
+    # EXIBIÇÃO NA TELA - ALTERADO PARA: Relatórios
     # ==============================================================================
     st.divider()
-    st.header("📈 relatorios")
+    st.header("📈 Relatórios")
     
     col_g1, col_g2 = st.columns([1.2, 1.0])
     with col_g1:
@@ -197,13 +197,14 @@ if not df_dados.empty:
         if coletou_umidade: st.image(img_umidade, use_container_width=True)
 
     # ==============================================================================
-    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (BARRA LATERAL)
+    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (TRATANDO CARACTERES ESPECIAIS)
     # ==============================================================================
     with st.sidebar:
         st.divider()
         st.header("📄 Emissão de Documento")
         
         if st.button("✨ Gerar Relatório em PDF"):
+            # Cria a classe PDF forçando o modo de texto "latin-1" nativo do PDF para aceitar acentos
             pdf = FPDF(orientation="P", unit="mm", format="A4")
             pdf.set_auto_page_break(auto=True, margin=15)
             
@@ -214,40 +215,41 @@ if not df_dados.empty:
             pdf.set_fill_color(15, 58, 97) # Azul Pnania
             pdf.rect(0, 0, 210, 38, "F")
             
-            pdf.set_font("Helvetica", "B", 16)
+            pdf.set_font("Helvetica", "B", 15)
             pdf.set_text_color(255, 255, 255)
-            pdf.cell(0, 8, "LAUDO TÉCNICO DE AVALIAÇÃO ESTRUTURAL", ln=True, align="C")
+            # Convertendo os textos para latin-1 para evitar erros de acentuação
+            pdf.cell(0, 8, "LAUDO TÉCNICO DE AVALIAÇÃO ESTRUTURAL".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
             pdf.set_font("Helvetica", "", 11)
-            pdf.cell(0, 6, "MÉTODO PAULO NANIA — ENGENHARIA DE SUPERFÍCIES EQUESTRES", ln=True, align="C")
+            pdf.cell(0, 6, "MÉTODO PAULO NANIA — ENGENHARIA DE SUPERFÍCIES EQUESTRES".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
             
             pdf.ln(12)
             
-            # Quadro de Identificação da Propriedade (Borda cinza fina)
+            # Quadro de Identificação da Propriedade
             pdf.set_text_color(50, 50, 50)
             pdf.set_fill_color(245, 247, 250)
             pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 7, "  DADOS DA PROPRIEDADE E DA COLETA", ln=True, fill=True)
+            pdf.cell(0, 7, "  DADOS DA PROPRIEDADE E DA COLETA".encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
             
             pdf.set_font("Helvetica", "", 10)
             pdf.cell(45, 7, f" Fazenda / Haras: ", border="LT")
             pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{nome_fazenda}", border="RT", ln=True)
+            pdf.cell(0, 7, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
             
             pdf.set_font("Helvetica", "", 10)
             pdf.cell(45, 7, f" Pista / Picadeiro: ", border="L")
             pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{nome_pista} ({dimensao_pista})", border="R", ln=True)
+            pdf.cell(0, 7, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
             
             pdf.set_font("Helvetica", "", 10)
             pdf.cell(45, 7, f" Data da Coleta: ", border="LB")
             pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 7, f"{data_coleta}", border="RB", ln=True)
+            pdf.cell(0, 7, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
             
             pdf.ln(8)
             
             # Inserindo o Gráfico de Penetrômetro
             pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)", ln=True)
+            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
             pdf.ln(2)
             pdf.image(img_penetro, x=15, w=180)
             
@@ -260,12 +262,12 @@ if not df_dados.empty:
                 pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(255, 255, 255)
                 pdf.set_y(4)
-                pdf.cell(0, 6, f"RELATÓRIO DE MAPEAMENTO CONTÍNUO — {nome_fazenda.upper()}", ln=True, align="C")
+                pdf.cell(0, 6, f"RELATÓRIO DE MAPEAMENTO CONTÍNUO — {nome_fazenda.upper()}".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
                 pdf.set_text_color(50, 50, 50)
                 
                 pdf.set_y(25)
                 pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Campo", ln=True)
+                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Campo".encode('latin-1', 'replace').decode('latin-1'), ln=True)
                 pdf.ln(4)
                 
                 if coletou_espessura:
@@ -284,7 +286,7 @@ if not df_dados.empty:
                 mime="application/pdf"
             )
 
-        # Botão de CSV antigo continua aqui embaixo como segurança
+        # Botão de CSV
         df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
             "1ª Queda": "1ª Queda - Amortecimento (cm)", 
             "2ª Queda": "2ª Queda - Transição (cm)", 
