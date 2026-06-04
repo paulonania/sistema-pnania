@@ -97,7 +97,7 @@ if not df_dados.empty:
     umidade_media_geral = df_dados["Umidade"].mean()
     espessura_media_geral = round(df_dados["Espessura"].mean())
 
-    # GERAÇÃO DOS GRÁFICOS EM MEMÓRIA (USANDO COMANDO EXPRESSO DO STREAMLIT PARA EVITAR TRAVAMENTOS)
+    # GERAÇÃO DOS GRÁFICOS EM MEMÓRIA
     fases, verde_inf, verde_sup = ['Amortecimento', 'Transição', 'Suporte'], [3.5, 5.5, 7.0], [4.5, 6.5, 8.0]
     
     # 1. Gráfico de Penetrômetro
@@ -181,9 +181,9 @@ if not df_dados.empty:
         plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
         img_umidade.seek(0)
 
-    # ==============================================================================
-    # EXIBIÇÃO CORRETA NA TELA (RESOLVENDO O BUG DO AXES)
-    # ==============================================================================
+# ==============================================================================
+# EXIBIÇÃO NA TELA - Relatórios
+# ==============================================================================
     st.divider()
     st.header("📈 Relatórios")
     
@@ -195,7 +195,7 @@ if not df_dados.empty:
         if coletou_umidade: st.pyplot(fig3)
 
     # ==============================================================================
-    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (LOGO À ESQUERDA — SEM TÍTULO ADICIONAL)
+    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (AJUSTE FINO DE LAYOUT)
     # ==============================================================================
     with st.sidebar:
         st.divider()
@@ -205,18 +205,28 @@ if not df_dados.empty:
             pdf = FPDF(orientation="P", unit="mm", format="A4")
             pdf.set_auto_page_break(auto=True, margin=15)
             
-            # --- PÁGINA 1 ---
+            # --- PÁGINA 1: Capa com Logo à Esquerda e Título no Meio ---
             pdf.add_page()
+            
             if os.path.exists("logo.png"):
+                # Logo no topo esquerdo
                 pdf.image("logo.png", x=10, y=10, w=45)
-                pdf.set_y(34)
+                pdf.set_y(32) 
             else:
                 pdf.set_y(15)
             
-            pdf.set_draw_color(220, 222, 225)
-            pdf.line(10, 32, 200, 32)
-            pdf.set_y(38)
+            # SOLICITAÇÃO: Escrever LAUDO TÉCNICO centralizado (no meio da página) logo após a logo
+            pdf.set_font("Helvetica", "B", 22)
+            pdf.set_text_color(15, 58, 97) # Azul Pnania
+            pdf.cell(0, 12, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
             
+            # Linha divisória fina cinza elegante
+            pdf.set_draw_color(220, 222, 225)
+            pdf.line(10, 48, 200, 48)
+            
+            pdf.set_y(54)
+            
+            # Quadro de Identificação da Propriedade
             pdf.set_text_color(50, 50, 50)
             pdf.set_fill_color(245, 247, 250)
             pdf.set_font("Helvetica", "B", 11)
@@ -238,56 +248,30 @@ if not df_dados.empty:
             pdf.cell(0, 7, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
             
             pdf.ln(8)
+            
+            # Inserindo o Gráfico de Penetrômetro
             pdf.set_font("Helvetica", "B", 11)
             pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
             pdf.ln(2)
             pdf.image(img_penetro, x=15, w=180)
             
-            # --- PÁGINA 2 ---
+            # --- PÁGINA 2: Apenas o Logo (Sem nenhum texto do lado ou embaixo encavalado) ---
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
-                if os.path.exists("logo.png"):
-                    pdf.image("logo.png", x=10, y=5, w=22)
-                    pdf.set_y(7)
-                    pdf.set_font("Helvetica", "B", 12)
-                    pdf.set_text_color(15, 58, 97)
-                    pdf.cell(0, 6, f"      MAPAS DE CALOR — MAPEAMENTO CONTÍNUO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
-                else:
-                    pdf.set_y(7)
-                    pdf.set_font("Helvetica", "B", 12)
-                    pdf.set_text_color(15, 58, 97)
-                    pdf.cell(0, 6, f"MAPEAMENTO CONTÍNUO DE CAMPO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
                 
-                pdf.line(10, 16, 200, 16)
+                if os.path.exists("logo.png"):
+                    # SOLICITAÇÃO: Manter somente a logo no topo esquerdo e retirar todo o texto debaixo dela
+                    pdf.image("logo.png", x=10, y=8, w=25)
+                
+                # Linha divisória que acompanha o cabeçalho limpo na pág 2
+                pdf.set_draw_color(220, 222, 225)
+                pdf.line(10, 20, 200, 20)
+                
                 pdf.set_text_color(50, 50, 50)
-                pdf.set_y(25)
+                pdf.set_y(26)
                 pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor", ln=True)
+                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
                 pdf.ln(4)
                 
                 if coletou_espessura:
-                    pdf.image(img_espessura, x=35, w=140)
-                    pdf.ln(10)
-                if coletou_umidade:
-                    pdf.image(img_umidade, x=35, w=140)
-            
-            pdf_output = pdf.output()
-            st.download_button(
-                label="📥 Baixar Laudo Técnico (.PDF)", 
-                data=bytes(pdf_output), 
-                file_name=f"Laudo_Tecnico_{nome_fazenda.replace(' ', '_')}.pdf", 
-                mime="application/pdf"
-            )
-
-        # Botão de CSV
-        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
-            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
-            "2ª Queda": "2ª Queda - Transição (cm)", 
-            "3ª Queda": "3ª Queda - Suporte (cm)", 
-            "Umidade": "Umidade TDR (%)", 
-            "Espessura": "Espessura da Camada (cm)"
-        })
-        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
-else:
-    st.warning("A planilha está vazia!")
+                    pdf.image(img_espessura
