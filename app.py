@@ -104,7 +104,7 @@ if not df_dados.empty:
     med_suporte = df_dados["3ª Queda"].mean()
     medicao_atual = [med_amortecimento, med_transicao, med_suporte]
     
-    # NOVOS CÁLCULOS: IO INDIVIDUAL POR CAMADA DE PENETRÔMETRO
+    # IO individual por camada do penetrômetro
     io_amort = (df_dados["1ª Queda"].std() / med_amortecimento) * 100 if med_amortecimento > 0 else 0.0
     io_trans = (df_dados["2ª Queda"].std() / med_transicao) * 100 if med_transicao > 0 else 0.0
     io_supor = (df_dados["3ª Queda"].std() / med_suporte) * 100 if med_suporte > 0 else 0.0
@@ -140,7 +140,7 @@ if not df_dados.empty:
     plt.title(f"{nome_fazenda} — {nome_pista} — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
     plt_ax1.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#e0e0e0', fontsize=9)
     
-    # REORGANIZAÇÃO DA TABELA: ADICIONADA A LINHA DE IO DA CAMADA
+    # Tabela estruturada com o IO da camada
     colunas_tab = ['Amortecimento', 'Transição', 'Suporte', 'Umidade Pista', 'Espessura Méd.']
     dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}", f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}", f"{ideal_umi}", f"{ideal_esp}"]
     dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm"]
@@ -197,114 +197,4 @@ if not df_dados.empty:
         plt_ax3.set_xticks(range(1, n_linhas + 1))
         plt_ax3.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
         fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
-        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
-        img_umidade.seek(0)
-
-    # EXIBIÇÃO NA TELA
-    st.divider()
-    st.header("📈 Relatórios")
-    
-    col_g1, col_g2 = st.columns([1.2, 1.0])
-    with col_g1:
-        st.pyplot(fig1)
-    with col_g2:
-        if coletou_espessura: st.pyplot(fig2)
-        if coletou_umidade: st.pyplot(fig3)
-
-    # EMISSÃO DO LAUDO EM PDF (LIMITADO A 2 PÁGINAS)
-    with st.sidebar:
-        st.divider()
-        st.header("📄 Emissão de Documento")
-        
-        if st.button("✨ Gerar Relatório em PDF"):
-            pdf = FPDF(orientation="P", unit="mm", format="A4")
-            pdf.set_auto_page_break(auto=True, margin=15)
-            pdf.add_page()
-            
-            if os.path.exists("logo.png"):
-                pdf.image("logo.png", x=10, y=10, w=45)
-                pdf.set_y(34)
-            else:
-                pdf.set_y(15)
-            
-            pdf.set_font("Helvetica", "B", 18)
-            pdf.set_text_color(15, 58, 97)
-            pdf.cell(0, 12, "RELATÓRIO DE DESEMPENHO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
-            
-            pdf.set_draw_color(220, 222, 225)
-            pdf.line(10, 48, 200, 48)
-            pdf.set_y(52)
-            
-            pdf.set_text_color(50, 50, 50)
-            pdf.set_fill_color(245, 247, 250)
-            pdf.set_font("Helvetica", "B", 10)
-            
-            txt_quadro = "  DADOS DA PROPRIEDADE E DA COLETA"
-            pdf.cell(0, 6, txt_quadro.encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
-            
-            pdf.set_font("Helvetica", "", 9)
-            pdf.cell(40, 6, " Fazenda / Haras: ", border="LT")
-            pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
-            
-            pdf.set_font("Helvetica", "", 9)
-            pdf.cell(40, 6, " Pista / Picadeiro: ", border="L")
-            pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
-            
-            pdf.set_font("Helvetica", "", 9)
-            pdf.cell(40, 6, " Data da Coleta: ", border="LB")
-            pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
-            
-            if txt_obs:
-                pdf.ln(2)
-                pdf.set_font("Helvetica", "B", 9)
-                pdf.cell(40, 6, " Manejo Prévio: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
-                pdf.set_font("Helvetica", "", 9)
-                pdf.multi_cell(0, 6, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
-            
-            if txt_parecer:
-                pdf.ln(1)
-                pdf.set_font("Helvetica", "B", 9)
-                pdf.cell(40, 6, " Parecer Técnico: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
-                pdf.set_font("Helvetica", "", 9)
-                pdf.multi_cell(0, 6, f"{txt_parecer}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
-            
-            pdf.ln(4)
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
-            pdf.ln(1)
-            pdf.image(img_penetro, x=15, w=180)
-            
-            # --- PÁGINA 2: MAPAS ---
-            if coletou_espessura or coletou_umidade:
-                pdf.add_page()
-                if os.path.exists("logo.png"):
-                    pdf.image("logo.png", x=10, y=8, w=25)
-                
-                pdf.line(10, 20, 200, 20)
-                pdf.set_text_color(50, 50, 50)
-                pdf.set_y(26)
-                pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
-                pdf.ln(4)
-                
-                if coletou_espessura:
-                    pdf.image(img_espessura, x=35, w=140)
-                    pdf.ln(10)
-                if coletou_umidade:
-                    pdf.image(img_umidade, x=35, w=140)
-            
-            pdf_output = pdf.output()
-            st.download_button(
-                label="📥 Baixar Laudo Técnico (.PDF)", 
-                data=bytes(pdf_output), 
-                file_name=f"Relatorio_Desempenho_{nome_fazenda.replace(' ', '_')}.pdf", 
-                mime="application/pdf"
-            )
-
-        # Botão de CSV organizado
-        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
-            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
-            "2ª Queda": "2ª Queda -
+        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=
