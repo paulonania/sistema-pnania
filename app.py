@@ -23,6 +23,12 @@ with st.sidebar:
     dimensao_pista = st.text_input("Dimensão da Pista", "30x50m")
     data_coleta = st.text_input("Data da Coleta", "04/06/2026")
     
+    # NOVO CAMPO DE OBSERVAÇÃO SOLICITADO
+    txt_obs = st.text_area(
+        "Observações de Campo", 
+        "Ex: Irrigado por 10 minutos, passou o rastelo com as hastes a 2 polegadas de profundidade."
+    )
+    
     st.divider()
     st.header("📐 Configuração da Grade")
     n_linhas = st.number_input("Número de Linhas de Coleta (Eixo X)", min_value=2, max_value=10, value=4, step=1)
@@ -128,7 +134,6 @@ if not df_dados.empty:
     plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
     img_penetro.seek(0)
 
-    # LINHAS CURTAS PARA EVITAR QUEBRA AUTOMÁTICA DO GITHUB
     xi = np.linspace(1, n_linhas, 100)
     yi = np.linspace(1, n_pontos, 100)
     xi, yi = np.meshgrid(xi, yi)
@@ -222,7 +227,15 @@ if not df_dados.empty:
             pdf.set_font("Helvetica", "B", 10)
             pdf.cell(0, 7, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
             
-            pdf.ln(8)
+            # IMPRESSÃO DO CAMPO DE OBSERVAÇÕES NO PDF
+            if txt_obs:
+                pdf.ln(3)
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.cell(45, 7, " Condições/Manejo: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 10)
+                pdf.multi_cell(0, 7, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+            
+            pdf.ln(6)
             pdf.set_font("Helvetica", "B", 11)
             pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
             pdf.ln(2)
@@ -254,7 +267,7 @@ if not df_dados.empty:
                 mime="application/pdf"
             )
 
-        # DICIONÁRIO TOTALMENTE QUEBRADO EM LINHAS CURTAS
+        # Botão de CSV organizado
         df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
             "1ª Queda": "1ª Queda - Amortecimento (cm)", 
             "2ª Queda": "2ª Queda - Transição (cm)", 
