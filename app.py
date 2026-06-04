@@ -17,11 +17,9 @@ if "reset_id" not in st.session_state:
     st.session_state["reset_id"] = 0
 
 def limpar_dados():
-    # Limpa o estado de todas as caixas de inserção
     for key in list(st.session_state.keys()):
         if key != "reset_id":
             del st.session_state[key]
-    # Muda o ID de reset para forçar o Streamlit a recriar os campos do zero
     st.session_state["reset_id"] += 1
 
 st.title("📊 Gerador de Relatórios — Método Pnania")
@@ -52,7 +50,6 @@ with st.sidebar:
 # ==============================================================================
 st.header("📋 Dados Coletados")
 
-# BOTÃO DE LIMPEZA CORRIGIDO
 if st.button("🧹 Limpar Todos os Dados da Tela", type="secondary"):
     limpar_dados()
     st.rerun()
@@ -74,7 +71,6 @@ for l_idx, aba in enumerate(abas):
             
             cols = st.columns(len(colunas_ativas))
             
-            # Chaves dinâmicas baseadas no ID de reset para garantir a limpeza visual imediata
             with cols[0]: q1 = st.number_input("1ª Queda (cm)", min_value=0.0, max_value=15.0, value=4.0, step=0.1, key=f"q1_{l}_{p}_{st.session_state['reset_id']}")
             with cols[1]: q2 = st.number_input("2ª Queda (cm)", min_value=0.0, max_value=15.0, value=5.5, step=0.1, key=f"q2_{l}_{p}_{st.session_state['reset_id']}")
             with cols[2]: q3 = st.number_input("3ª Queda (cm)", min_value=0.0, max_value=15.0, value=7.2, step=0.1, key=f"q3_{l}_{p}_{st.session_state['reset_id']}")
@@ -119,7 +115,6 @@ if not df_dados.empty:
     umidade_media_geral = df_dados["Umidade"].mean()
     espessura_media_geral = round(df_dados["Espessura"].mean())
 
-    # GERAÇÃO DOS GRÁFICOS EM MEMÓRIA
     fases, verde_inf, verde_sup = ['Amortecimento', 'Transição', 'Suporte'], [3.5, 5.5, 7.0], [4.5, 6.5, 8.0]
     
     fig1, plt_ax1 = plt.subplots(figsize=(9, 6.5))
@@ -216,6 +211,8 @@ if not df_dados.empty:
         if st.button("✨ Gerar Relatório em PDF"):
             pdf = FPDF(orientation="P", unit="mm", format="A4")
             pdf.set_auto_page_break(auto=True, margin=15)
+            
+            # --- PÁGINA 1 ---
             pdf.add_page()
             
             if os.path.exists("logo.png"):
@@ -224,9 +221,13 @@ if not df_dados.empty:
             else:
                 pdf.set_y(15)
             
+            pdf.set_font("Helvetica", "B", 22)
+            pdf.set_text_color(15, 58, 97)
+            pdf.cell(0, 12, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+            
             pdf.set_draw_color(220, 222, 225)
-            pdf.line(10, 32, 200, 32)
-            pdf.set_y(38)
+            pdf.line(10, 48, 200, 48)
+            pdf.set_y(54)
             
             pdf.set_text_color(50, 50, 50)
             pdf.set_fill_color(245, 247, 250)
@@ -254,6 +255,7 @@ if not df_dados.empty:
             pdf.ln(2)
             pdf.image(img_penetro, x=15, w=180)
             
+            # --- PÁGINA 2: CORRIGIDA (As aspas e parênteses do título fechados perfeitamente) ---
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
                 if os.path.exists("logo.png"):
@@ -263,4 +265,33 @@ if not df_dados.empty:
                 pdf.set_text_color(50, 50, 50)
                 pdf.set_y(26)
                 pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 6, "2.
+                # CORREÇÃO DA LINHA 266: Texto finalizado e aspa fechada corretamente
+                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+                pdf.ln(4)
+                
+                if coletou_espessura:
+                    pdf.image(img_espessura, x=35, w=140)
+                    pdf.ln(10)
+                if coletou_umidade:
+                    pdf.image(img_umidade, x=35, w=140)
+            
+            pdf_output = pdf.output()
+            st.download_button(
+                label="📥 Baixar Laudo Técnico (.PDF)", 
+                data=bytes(pdf_output), 
+                file_name=f"Laudo_Tecnico_{nome_fazenda.replace(' ', '_')}.pdf", 
+                mime="application/pdf"
+            )
+
+        # Botão de CSV
+        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
+            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
+            "2ª Queda": "2ª Queda - Transição (cm)", 
+            "3ª Queda": "3ª Queda - Suporte (cm)", 
+            "Umidade": "Umidade TDR (%)", 
+            "Espessura": "Espessura da Camada (cm)"
+        })
+        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
+        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
+else:
+    st.warning("A planilha está vazia!")
