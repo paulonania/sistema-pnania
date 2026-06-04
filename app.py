@@ -1,3 +1,4 @@
+# ATUALIZACAO_FORCADA_04062026
 import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
