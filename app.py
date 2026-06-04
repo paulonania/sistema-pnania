@@ -168,3 +168,184 @@ if not df_dados.empty:
     for (row, col), cell in tabela.get_celld().items():
         if row == 0: cell.get_text().set_color('white'); cell.get_text().set_weight('bold')
         if row > 0 and col >= 0: cell.get_text().set_weight('bold')
+        
+    txt_legenda_io = (
+        "Diretrizes do Índice de Oscilação (IO):\n"
+        "  🟢 Excelente: < 10.0%    |    "
+        "🟡 Alerta: 10.0% - 15.0%    |    "
+        "🔴 Crítico: > 15.0%"
+    )
+    fig1.text(
+        0.5, -0.18, txt_legenda_io, 
+        ha='center', va='center', fontsize=10, fontweight='bold',
+        color='#333333',
+        bbox=dict(boxstyle='round,pad=0.6', facecolor='#fafafa', edgecolor='#dcdcdc')
+    )
+    
+    plt.subplots_adjust(bottom=0.32, top=0.88)
+    
+    img_penetro = io.BytesIO()
+    plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
+    img_penetro.seek(0)
+
+    xi = np.linspace(1, n_linhas, 100)
+    yi = np.linspace(1, n_pontos, 100)
+    xi, yi = np.meshgrid(xi, yi)
+    
+    lista_comprimento = [str(i) for i in range(1, n_pontos + 1)]
+    lista_largura = [f"L {i}" for i in range(1, n_linhas + 1)]
+    
+    img_espessura = io.BytesIO()
+    if coletou_espessura:
+        zi_espessura = griddata((df_dados['X'], df_dados['Y']), df_dados['Espessura'], (xi, yi), method='cubic')
+        fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
+        mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
+        plt_ax2.set_title(f'MAPA DE ESPESSURA DA CAMADA (IO: {io_espessura:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        plt_ax2.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
+        plt_ax2.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
+        
+        plt_ax2.set_yticks(range(1, n_pontos + 1))
+        plt_ax2.set_yticklabels(lista_comprimento, fontsize=9, fontweight='bold')
+        plt_ax2.set_xticks(range(1, n_linhas + 1))
+        plt_ax2.set_xticklabels(lista_largura, fontsize=9)
+        
+        fig2.colorbar(mapa1, ax=plt_ax2).set_label('Espessura (cm)', fontsize=9, fontweight='bold')
+        plt.savefig(img_espessura, format='png', bbox_inches='tight', dpi=150)
+        img_espessura.seek(0)
+
+    img_umidade = io.BytesIO()
+    if coletou_umidade:
+        zi_umidade = griddata((df_dados['X'], df_dados['Y']), df_dados['Umidade'], (xi, yi), method='cubic')
+        fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
+        mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
+        plt_ax3.set_title(f'MAPA DE UMIDADE DA PISTA (IO: {io_umidade:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        plt_ax3.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
+        plt_ax3.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
+        
+        plt_ax3.set_yticks(range(1, n_pontos + 1))
+        plt_ax3.set_yticklabels(lista_comprimento, fontsize=9, fontweight='bold')
+        plt_ax3.set_xticks(range(1, n_linhas + 1))
+        plt_ax3.set_xticklabels(lista_largura, fontsize=9)
+        
+        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
+        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
+        img_umidade.seek(0)
+
+    # EXIBIÇÃO NA TELA
+    st.divider()
+    st.header("📈 Relatórios de Desempenho")
+    
+    col_g1, col_g2 = st.columns([1.2, 1.0])
+    with col_g1:
+        st.pyplot(fig1)
+    with col_g2:
+        if coletou_espessura: st.pyplot(fig2)
+        if coletou_umidade: st.pyplot(fig3)
+
+    # EMISSÃO DO LAUDO EM PDF (LIMITADO A 2 PÁGINAS)
+    with st.sidebar:
+        st.divider()
+        st.header("📄 Emissão de Documento")
+        
+        if st.button("✨ Gerar Relatório em PDF"):
+            pdf = FPDF(orientation="P", unit="mm", format="A4")
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.add_page()
+            
+            if os.path.exists("logo.png"):
+                pdf.image("logo.png", x=10, y=10, w=45)
+                pdf.set_y(34)
+            else:
+                pdf.set_y(15)
+            
+            pdf.set_font("Helvetica", "B", 18)
+            pdf.set_text_color(15, 58, 97)
+            
+            txt_tit = "RELATÓRIO DE DESEMPENHO"
+            pdf.cell(0, 12, txt_tit.encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+            
+            pdf.set_draw_color(220, 222, 225)
+            pdf.line(10, 48, 200, 48)
+            pdf.set_y(52)
+            
+            pdf.set_text_color(50, 50, 50)
+            pdf.set_fill_color(245, 247, 250)
+            
+            pdf.set_font("Helvetica", "B", 10)
+            txt_quadro = "  DADOS DA PROPRIEDADE E DA COLETA"
+            pdf.cell(0, 6, txt_quadro.encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
+            
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 6, " Fazenda / Haras: ", border="LT")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
+            
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 6, " Pista / Picadeiro: ", border="L")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
+            
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(40, 6, " Data da Coleta: ", border="LB")
+            pdf.set_font("Helvetica", "B", 9)
+            pdf.cell(0, 6, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
+            
+            if txt_obs:
+                pdf.ln(2)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.cell(40, 6, " Manejo Prévio: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 9)
+                pdf.multi_cell(0, 6, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+            
+            if txt_parecer:
+                pdf.ln(1)
+                pdf.set_font("Helvetica", "B", 9)
+                pdf.cell(40, 6, " Parecer Técnico: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 9)
+                pdf.multi_cell(0, 6, f"{txt_parecer}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+            
+            pdf.ln(4)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+            pdf.ln(1)
+            pdf.image(img_penetro, x=15, w=180)
+            
+            # --- PÁGINA 2: MAPAS ---
+            if coletou_espessura or coletou_umidade:
+                pdf.add_page()
+                if os.path.exists("logo.png"):
+                    pdf.image("logo.png", x=10, y=8, w=25)
+                
+                pdf.line(10, 20, 200, 20)
+                pdf.set_text_color(50, 50, 50)
+                pdf.set_y(26)
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+                pdf.ln(4)
+                
+                if coletou_espessura:
+                    pdf.image(img_espessura, x=35, w=140)
+                    pdf.ln(10)
+                if coletou_umidade:
+                    pdf.image(img_umidade, x=35, w=140)
+            
+            pdf_output = pdf.output()
+            st.download_button(
+                label="📥 Baixar Laudo Técnico (.PDF)", 
+                data=bytes(pdf_output), 
+                file_name=f"Relatorio_Desempenho_{nome_fazenda.replace(' ', '_')}.pdf", 
+                mime="application/pdf"
+            )
+
+        # Exportação limpa
+        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
+            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
+            "2ª Queda": "2ª Queda - Transição (cm)", 
+            "3ª Queda": "3ª Queda - Suporte (cm)", 
+            "Umidade": "Umidade TDR (%)", 
+            "Espessura": "Espessura da Camada (cm)"
+        })
+        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
+        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
+else:
+    st.warning("A planilha está vazia!")
