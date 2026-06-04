@@ -1,18 +1,29 @@
-# 2. GRÁFICO PADRÃO PNANIA
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.plot([0, 1, 2], m, marker='o', color='#0f3a61', lw=3, markersize=8)
-ax.set_xticks([0, 1, 2])
-ax.set_xticklabels(['Amortecimento', 'Transição', 'Suporte'], fontweight='bold')
-ax.set_ylim(3, 8)
-ax.grid(axis='y', linestyle=':', color='gray', alpha=0.6)
+import streamlit as st
+import pandas as pd
+# Importando explicitamente o pyplot para garantir que o NameError não ocorra
+import matplotlib.pyplot as plt
 
-# TABELA DE DADOS PNANIA
-tab_text = [[f"{m[0]:.1f}", f"{m[1]:.1f}", f"{m[2]:.1f}"], [f"{io[0]:.1f}%", f"{io[1]:.1f}%", f"{io[2]:.1f}%"]]
-table = ax.table(cellText=tab_text, rowLabels=['Média (cm)', 'IO (%)'], 
-                 colLabels=['Amort.', 'Trans.', 'Suporte'],
-                 loc='bottom', bbox=[0, -0.4, 1, 0.25])
-table.auto_set_font_size(False)
-table.set_fontsize(10)
-plt.subplots_adjust(bottom=0.3)
+st.set_page_config(layout="wide")
+st.title("📊 Relatório de Desempenho")
 
-st.pyplot(fig)
+# Estrutura básica para coletar dados sem travar
+lista = []
+for l in range(1, 3):
+    for p in range(1, 3):
+        with st.expander(f"Linha {l} - Ponto {p}"):
+            c = st.columns(3)
+            q1 = c[0].number_input(f"Q1_{l}_{p}", 0.0, 15.0, 4.0)
+            q2 = c[1].number_input(f"Q2_{l}_{p}", 0.0, 15.0, 5.5)
+            q3 = c[2].number_input(f"Q3_{l}_{p}", 0.0, 15.0, 7.2)
+            lista.append({"Q1": q1, "Q2": q2, "Q3": q3})
+
+df = pd.DataFrame(lista)
+
+# Gráfico simples
+if not df.empty:
+    m = [df["Q1"].mean(), df["Q2"].mean(), df["Q3"].mean()]
+    fig, ax = plt.subplots(figsize=(6, 3))
+    ax.plot([0, 1, 2], m, marker='o')
+    st.pyplot(fig)
+else:
+    st.write("Aguardando dados...")
