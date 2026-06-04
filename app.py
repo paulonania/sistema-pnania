@@ -144,32 +144,9 @@ if not df_dados.empty:
     t_tra = f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}"
     t_sup = f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}"
     
-    dados_linha1 = [
-        t_amo, 
-        t_tra, 
-        t_sup, 
-        f"{ideal_umi}", 
-        f"{ideal_esp}"
-    ]
-    
-    dados_linha2 = [
-        f"{medicao_atual[0]:.1f}", 
-        f"{medicao_atual[1]:.1f}", 
-        f"{medicao_atual[2]:.1f}", 
-        f"{umidade_media_geral:.1f}%", 
-        f"{espessura_media_geral} cm"
-    ]
-    
-    str_io1 = f"{io_amort:.1f}%"
-    str_io2 = f"{io_trans:.1f}%"
-    str_io3 = f"{io_supor:.1f}%"
-    dados_linha3 = [
-        str_io1, 
-        str_io2, 
-        str_io3, 
-        "-", 
-        "-"
-    ]
+    dados_linha1 = [t_amo, t_tra, t_sup, f"{ideal_umi}", f"{ideal_esp}"]
+    dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm"]
+    dados_linha3 = [f"{io_amort:.1f}%", f"{io_trans:.1f}%", f"{io_supor:.1f}%", "-", "-"]
     
     conteudo_celulas = [dados_linha1, dados_linha2, dados_linha3]
     titulos_linhas = ['Faixa Ideal', 'Pista Atual', 'IO da Camada']
@@ -220,13 +197,7 @@ if not df_dados.empty:
     
     img_espessura = io.BytesIO()
     if coletou_espessura:
-        # FATIAMENTO VERTICAL COMPLETO DA FUNÇÃO GRIDDATA DA ESPESSURA
-        zi_espessura = griddata(
-            (df_dados['X'], df_dados['Y']), 
-            df_dados['Espessura'], 
-            (xi, yi), 
-            method='cubic'
-        )
+        zi_espessura = griddata((df_dados['X'], df_dados['Y']), df_dados['Espessura'], (xi, yi), method='cubic')
         fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
         mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
         plt_ax2.set_title(f'MAPA DE ESPESSURA DA CAMADA (IO: {io_espessura:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
@@ -244,13 +215,7 @@ if not df_dados.empty:
 
     img_umidade = io.BytesIO()
     if coletou_umidade:
-        # FATIAMENTO VERTICAL COMPLETO DA FUNÇÃO GRIDDATA DA UMIDADE
-        zi_umidade = griddata(
-            (df_dados['X'], df_dados['Y']), 
-            df_dados['Umidade'], 
-            (xi, yi), 
-            method='cubic'
-        )
+        zi_umidade = griddata((df_dados['X'], df_dados['Y']), df_dados['Umidade'], (xi, yi), method='cubic')
         fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
         mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
         plt_ax3.set_title(f'MAPA DE UMIDADE DA PISTA (IO: {io_umidade:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
@@ -277,11 +242,12 @@ if not df_dados.empty:
         if coletou_espessura: st.pyplot(fig2)
         if coletou_umidade: st.pyplot(fig3)
 
-    # EMISSÃO DO LAUDO EM PDF (LIMITADO A 2 PÁGINAS)
+    # BARRA LATERAL ORGANIZADA - REMOVIDO VAZAMENTO DE DOCUMENTAÇÃO
     with st.sidebar:
         st.divider()
         st.header("📄 Emissão de Documento")
         
+        # Correção cirúrgica: Isolar a lógica interna para o Streamlit não cuspir texto
         if st.button("✨ Gerar Relatório em PDF"):
             pdf = FPDF(orientation="P", unit="mm", format="A4")
             pdf.set_auto_page_break(auto=True, margin=15)
@@ -313,17 +279,17 @@ if not df_dados.empty:
             pdf.set_font("Helvetica", "", 9)
             pdf.cell(40, 5, " Fazenda / Haras: ", border="LT")
             pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
+            pdf.cell(0, 5, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
             
             pdf.set_font("Helvetica", "", 9)
             pdf.cell(40, 5, " Pista / Picadeiro: ", border="L")
             pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
+            pdf.cell(0, 5, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
             
             pdf.set_font("Helvetica", "", 9)
             pdf.cell(40, 5, " Data da Coleta: ", border="LB")
             pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
+            pdf.cell(0, 5, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
             
             if txt_obs:
                 pdf.ln(1)
@@ -381,4 +347,33 @@ if not df_dados.empty:
                 
                 pdf.line(10, 20, 200, 20)
                 pdf.set_text_color(50, 50, 50)
-                pdf
+                pdf.set_y(26)
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+                pdf.ln(4)
+                
+                if coletou_espessura:
+                    pdf.image(img_espessura, x=35, w=140)
+                    pdf.ln(10)
+                if coletou_umidade:
+                    pdf.image(img_umidade, x=35, w=140)
+            
+            pdf_output = pdf.output()
+            st.download_button(
+                label="📥 Baixar Laudo Técnico (.PDF)", 
+                data=bytes(pdf_output), 
+                file_name=f"Relatorio_Desempenho_{nome_fazenda.replace(' ', '_')}.pdf", 
+                mime="application/pdf"
+            )
+
+        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
+            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
+            "2ª Queda": "2ª Queda - Transição (cm)", 
+            "3ª Queda": "3ª Queda - Suporte (cm)", 
+            "Umidade": "Umidade TDR (%)", 
+            "Espessura": "Espessura da Camada (cm)"
+        })
+        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
+        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
+else:
+    st.warning("A planilha está vazia!")
