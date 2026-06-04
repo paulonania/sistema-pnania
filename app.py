@@ -49,7 +49,6 @@ with st.sidebar:
     coletou_umidade = st.checkbox("Coletar Umidade por Ponto", value=True)
     coletou_espessura = st.checkbox("Coletar Espessura por Ponto", value=True)
     
-    # NOVOS CAMPOS GLOBAIS CASO NÃO COLETE PONTO A PONTO
     st.markdown("---")
     st.markdown("**Valores Gerais da Pista (Caso não colete por ponto):**")
     global_umi = st.number_input("Umidade Geral Declarada (%)", min_value=0.0, max_value=100.0, value=4.5, step=0.1)
@@ -105,10 +104,10 @@ if not df_dados.empty:
     med_suporte = df_dados["3ª Queda"].mean()
     medicao_atual = [med_amortecimento, med_transicao, med_suporte]
     
-    todas_quedas = pd.concat([df_dados["1ª Queda"], df_dados["2ª Queda"], df_dados["3ª Queda"]])
-    io_geral = (todas_quedas.std() / todas_quedas.mean()) * 100 if todas_quedas.mean() > 0 else 0
+    # Cálculos isolados de IO para Umidade e Espessura
+    io_umidade = (df_dados["Umidade"].std() / df_dados["Umidade"].mean()) * 100 if df_dados["Umidade"].mean() > 0 and coletou_umidade else 0.0
+    io_espessura = (df_dados["Espessura"].std() / df_dados["Espessura"].mean()) * 100 if df_dados["Espessura"].mean() > 0 and coletou_espessura else 0.0
     
-    # Se coletou por ponto, calcula a média real, senão usa o valor global declarado
     umidade_media_geral = df_dados["Umidade"].mean() if coletou_umidade else global_umi
     espessura_media_geral = round(df_dados["Espessura"].mean()) if coletou_espessura else global_esp
 
@@ -120,8 +119,6 @@ if not df_dados.empty:
     plt_ax1.fill_between(x_indices, verde_inf, verde_sup, color='#e2f0d9', alpha=0.7, label='Método Pnania')
     plt_ax1.plot(x_indices, verde_sup, color='#a9d08e', linestyle='--', linewidth=1.2)
     plt_ax1.plot(x_indices, verde_inf, color='#a9d08e', linestyle='--', linewidth=1.2)
-    
-    # REMOVIDO O IO DA LEGENDA DA PISTA CONFORME SOLICITADO
     plt_ax1.plot(x_indices, medicao_atual, color='#0f3a61', linewidth=3.5, marker='s', markersize=12, markerfacecolor='white', markeredgewidth=3, label=f"{nome_pista}")
     
     for i, txt in enumerate(medicao_atual):
@@ -138,10 +135,10 @@ if not df_dados.empty:
     plt.title(f"{nome_fazenda} — {nome_pista} — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
     plt_ax1.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#e0e0e0', fontsize=9)
     
-    # ADICIONADO O IO DA PISTA JUNTO DA TABELA GERAL
-    colunas_tab = ['Amortecimento', 'Transição', 'Suporte', 'Umidade Pista', 'Espessura Méd.', 'IO Geral']
-    dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}", f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}", f"{ideal_umi}", f"{ideal_esp}", "-"]
-    dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm", f"{io_geral:.1f}%"]
+    # REMOVIDO O COLUNA DO IO GERAL DA TABELA DO PENETRÔMETRO
+    colunas_tab = ['Amortecimento', 'Transição', 'Suporte', 'Umidade Pista', 'Espessura Méd.']
+    dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}", f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}", f"{ideal_umi}", f"{ideal_esp}"]
+    dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm"]
     
     tabela = plt.table(cellText=[dados_linha1, dados_linha2], rowLabels=['Faixa Ideal', 'Pista Atual'], colLabels=colunas_tab, rowColours=['#f2f7fa', '#ffffff'], colColours=['#0f3a61']*len(colunas_tab), loc='bottom', cellLoc='center', bbox=[0.0, -0.24, 1.0, 0.14])
     tabela.set_fontsize(9)
@@ -163,7 +160,9 @@ if not df_dados.empty:
         zi_espessura = griddata((df_dados['X'], df_dados['Y']), df_dados['Espessura'], (xi, yi), method='cubic')
         fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
         mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
-        plt_ax2.set_title('MAPA DE ESPESSURA DA CAMADA (cm)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        
+        # IO ADICIONADO DIRETAMENTE NO TÍTULO DO MAPA
+        plt_ax2.set_title(f'MAPA DE ESPESSURA DA CAMADA (IO: {io_espessura:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
         plt_ax2.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
         plt_ax2.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
         plt_ax2.set_yticks(range(1, n_pontos + 1))
@@ -179,7 +178,9 @@ if not df_dados.empty:
         zi_umidade = griddata((df_dados['X'], df_dados['Y']), df_dados['Umidade'], (xi, yi), method='cubic')
         fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
         mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
-        plt_ax3.set_title('MAPA DE UMIDADE DA PISTA (%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        
+        # IO ADICIONADO DIRETAMENTE NO TÍTULO DO MAPA
+        plt_ax3.set_title(f'MAPA DE UMIDADE DA PISTA (IO: {io_umidade:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
         plt_ax3.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
         plt_ax3.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
         plt_ax3.set_yticks(range(1, n_pontos + 1))
