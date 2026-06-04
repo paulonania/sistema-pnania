@@ -104,7 +104,12 @@ if not df_dados.empty:
     med_suporte = df_dados["3ª Queda"].mean()
     medicao_atual = [med_amortecimento, med_transicao, med_suporte]
     
-    # Cálculos isolados de IO para Umidade e Espessura
+    # NOVOS CÁLCULOS: IO INDIVIDUAL POR CAMADA DE PENETRÔMETRO
+    io_amort = (df_dados["1ª Queda"].std() / med_amortecimento) * 100 if med_amortecimento > 0 else 0.0
+    io_trans = (df_dados["2ª Queda"].std() / med_transicao) * 100 if med_transicao > 0 else 0.0
+    io_supor = (df_dados["3ª Queda"].std() / med_suporte) * 100 if med_suporte > 0 else 0.0
+    
+    # IO isolados dos mapas de calor
     io_umidade = (df_dados["Umidade"].std() / df_dados["Umidade"].mean()) * 100 if df_dados["Umidade"].mean() > 0 and coletou_umidade else 0.0
     io_espessura = (df_dados["Espessura"].std() / df_dados["Espessura"].mean()) * 100 if df_dados["Espessura"].mean() > 0 and coletou_espessura else 0.0
     
@@ -135,17 +140,25 @@ if not df_dados.empty:
     plt.title(f"{nome_fazenda} — {nome_pista} — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
     plt_ax1.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#e0e0e0', fontsize=9)
     
-    # REMOVIDO O COLUNA DO IO GERAL DA TABELA DO PENETRÔMETRO
+    # REORGANIZAÇÃO DA TABELA: ADICIONADA A LINHA DE IO DA CAMADA
     colunas_tab = ['Amortecimento', 'Transição', 'Suporte', 'Umidade Pista', 'Espessura Méd.']
     dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}", f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}", f"{ideal_umi}", f"{ideal_esp}"]
     dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm"]
+    dados_linha3 = [f"{io_amort:.1f}%", f"{io_trans:.1f}%", f"{io_supor:.1f}%", "-", "-"]
     
-    tabela = plt.table(cellText=[dados_linha1, dados_linha2], rowLabels=['Faixa Ideal', 'Pista Atual'], colLabels=colunas_tab, rowColours=['#f2f7fa', '#ffffff'], colColours=['#0f3a61']*len(colunas_tab), loc='bottom', cellLoc='center', bbox=[0.0, -0.24, 1.0, 0.14])
+    tabela = plt.table(
+        cellText=[dados_linha1, dados_linha2, dados_linha3], 
+        rowLabels=['Faixa Ideal', 'Pista Atual', 'IO da Camada'], 
+        colLabels=colunas_tab, 
+        rowColours=['#f2f7fa', '#ffffff', '#fcf8e3'], 
+        colColours=['#0f3a61']*len(colunas_tab), 
+        loc='bottom', cellLoc='center', bbox=[0.0, -0.30, 1.0, 0.18]
+    )
     tabela.set_fontsize(9)
     for (row, col), cell in tabela.get_celld().items():
         if row == 0: cell.get_text().set_color('white'); cell.get_text().set_weight('bold')
         if row > 0 and col >= 0: cell.get_text().set_weight('bold')
-    plt.subplots_adjust(bottom=0.22, top=0.88)
+    plt.subplots_adjust(bottom=0.26, top=0.88)
     
     img_penetro = io.BytesIO()
     plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
@@ -160,8 +173,6 @@ if not df_dados.empty:
         zi_espessura = griddata((df_dados['X'], df_dados['Y']), df_dados['Espessura'], (xi, yi), method='cubic')
         fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
         mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
-        
-        # IO ADICIONADO DIRETAMENTE NO TÍTULO DO MAPA
         plt_ax2.set_title(f'MAPA DE ESPESSURA DA CAMADA (IO: {io_espessura:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
         plt_ax2.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
         plt_ax2.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
@@ -178,8 +189,6 @@ if not df_dados.empty:
         zi_umidade = griddata((df_dados['X'], df_dados['Y']), df_dados['Umidade'], (xi, yi), method='cubic')
         fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
         mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
-        
-        # IO ADICIONADO DIRETAMENTE NO TÍTULO DO MAPA
         plt_ax3.set_title(f'MAPA DE UMIDADE DA PISTA (IO: {io_umidade:.1f}%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
         plt_ax3.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
         plt_ax3.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
@@ -298,12 +307,4 @@ if not df_dados.empty:
         # Botão de CSV organizado
         df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
             "1ª Queda": "1ª Queda - Amortecimento (cm)", 
-            "2ª Queda": "2ª Queda - Transição (cm)", 
-            "3ª Queda": "3ª Queda - Suporte (cm)", 
-            "Umidade": "Umidade TDR (%)", 
-            "Espessura": "Espessura da Camada (cm)"
-        })
-        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
-        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
-else:
-    st.warning("A planilha está vazia!")
+            "2ª Queda": "2ª Queda -
