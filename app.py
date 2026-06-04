@@ -144,6 +144,81 @@ if not df_dados.empty:
     t_tra = f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}"
     t_sup = f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}"
     
-    dados_linha1 = [t_amo, t_tra, t_sup, f"{ideal_umi}", f"{ideal_esp}"]
-    dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm"]
-    dados_linha3 =
+    # FATIAMENTO ABSOLUTO DAS TRÊS LINHAS DA TABELA PARA EVITAR SINTAXERROR
+    dados_linha1 = [
+        t_amo, 
+        t_tra, 
+        t_sup, 
+        f"{ideal_umi}", 
+        f"{ideal_esp}"
+    ]
+    
+    dados_linha2 = [
+        f"{medicao_atual[0]:.1f}", 
+        f"{medicao_atual[1]:.1f}", 
+        f"{medicao_atual[2]:.1f}", 
+        f"{umidade_media_geral:.1f}%", 
+        f"{espessura_media_geral} cm"
+    ]
+    
+    str_io1 = f"{io_amort:.1f}%"
+    str_io2 = f"{io_trans:.1f}%"
+    str_io3 = f"{io_supor:.1f}%"
+    dados_linha3 = [
+        str_io1, 
+        str_io2, 
+        str_io3, 
+        "-", 
+        "-"
+    ]
+    
+    conteudo_celulas = [dados_linha1, dados_linha2, dados_linha3]
+    titulos_linhas = ['Faixa Ideal', 'Pista Atual', 'IO da Camada']
+    cores_linhas = ['#f2f7fa', '#ffffff', '#fcf8e3']
+    cores_colunas = ['#0f3a61'] * len(colunas_tab)
+    dimensoes_tabela = [0.0, -0.26, 1.0, 0.16]
+    
+    tabela = plt.table(
+        cellText=conteudo_celulas, 
+        rowLabels=titulos_linhas, 
+        colLabels=colunas_tab, 
+        rowColours=cores_linhas, 
+        colColours=cores_colunas, 
+        loc='bottom', 
+        cellLoc='center', 
+        bbox=dimensoes_tabela
+    )
+    tabela.set_fontsize(9)
+    for (row, col), cell in tabela.get_celld().items():
+        if row == 0: cell.get_text().set_color('white'); cell.get_text().set_weight('bold')
+        if row > 0 and col >= 0: cell.get_text().set_weight('bold')
+        
+    txt_legenda_io = (
+        "Diretrizes do Índice de Oscilação (IO):\n"
+        "  🟢 Excelente: < 10.0%    |    "
+        "🟡 Alerta: 10.0% - 15.0%    |    "
+        "🔴 Crítico: > 15.0%"
+    )
+    fig1.text(
+        0.5, -0.18, txt_legenda_io, 
+        ha='center', va='center', fontsize=10, fontweight='bold',
+        color='#333333',
+        bbox=dict(boxstyle='round,pad=0.6', facecolor='#fafafa', edgecolor='#dcdcdc')
+    )
+    
+    plt.subplots_adjust(bottom=0.32, top=0.88)
+    
+    img_penetro = io.BytesIO()
+    plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
+    img_penetro.seek(0)
+
+    xi = np.linspace(1, n_linhas, 100)
+    yi = np.linspace(1, n_pontos, 100)
+    xi, yi = np.meshgrid(xi, yi)
+    
+    lista_comprimento = [str(i) for i in range(1, n_pontos + 1)]
+    lista_largura = [f"L {i}" for i in range(1, n_linhas + 1)]
+    
+    img_espessura = io.BytesIO()
+    if coletou_espessura:
+        zi_espessura = griddata((df_
