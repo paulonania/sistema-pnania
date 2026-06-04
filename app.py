@@ -122,30 +122,3 @@ if not df_dados.empty:
     x_indices = np.arange(len(fases))
     plt_ax1.fill_between(x_indices, verde_inf, verde_sup, color='#e2f0d9', alpha=0.7, label='Método Pnania')
     plt_ax1.plot(x_indices, verde_sup, color='#a9d08e', linestyle='--', linewidth=1.2)
-    plt_ax1.plot(x_indices, verde_inf, color='#a9d08e', linestyle='--', linewidth=1.2)
-    plt_ax1.plot(x_indices, medicao_atual, color='#0f3a61', linewidth=3.5, marker='s', markersize=12, markerfacecolor='white', markeredgewidth=3, label=f"{nome_pista}")
-    
-    for i, txt in enumerate(medicao_atual):
-        plt_ax1.annotate(f'{txt:.1f}', (x_indices[i], medicao_atual[i]), textcoords="offset points", xytext=(0, 14), ha='center', fontweight='bold', fontsize=11, color='#0f3a61')
-    
-    plt_ax1.set_ylim(0, 10)
-    plt_ax1.set_ylabel('Profundidade (cm)', fontsize=10, fontweight='bold', color='#555555')
-    plt_ax1.set_xticks(x_indices)
-    plt_ax1.set_xticklabels(fases, fontsize=10, fontweight='bold')
-    plt_ax1.spines['top'].set_visible(False)
-    plt_ax1.spines['right'].set_visible(False)
-    plt_ax1.grid(axis='y', linestyle=':', alpha=0.5, color='#cccccc')
-    plt.suptitle('ÍNDICE DE PENETRÔMETRO', fontsize=13, fontweight='bold', color='#0f3a61', y=0.98)
-    plt.title(f"{nome_fazenda} — {nome_pista} — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
-    plt_ax1.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#e0e0e0', fontsize=9)
-    
-    colunas_tab = ['Amortecimento', 'Transição', 'Suporte', 'Umidade Pista', 'Espessura Méd.']
-    dados_linha1 = [f"{verde_inf[0]:.1f} - {verde_sup[0]:.1f}", f"{verde_inf[1]:.1f} - {verde_sup[1]:.1f}", f"{verde_inf[2]:.1f} - {verde_sup[2]:.1f}", f"{ideal_umi}", f"{ideal_esp}"]
-    dados_linha2 = [f"{medicao_atual[0]:.1f}", f"{medicao_atual[1]:.1f}", f"{medicao_atual[2]:.1f}", f"{umidade_media_geral:.1f}%", f"{espessura_media_geral} cm"]
-    dados_linha3 = [f"{io_amort:.1f}%", f"{io_trans:.1f}%", f"{io_supor:.1f}%", "-", "-"]
-    
-    tabela = plt.table(
-        cellText=[dados_linha1, dados_linha2, dados_linha3], 
-        rowLabels=['Faixa Ideal', 'Pista Atual', 'IO da Camada'], 
-        colLabels=colunas_tab, 
-        rowColours=
