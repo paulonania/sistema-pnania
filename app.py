@@ -170,44 +170,4 @@ if disparar_calculos and dados_inseridos:
         plt_ax3.set_yticklabels([str(i) for i in range(1, n_pontos + 1)], fontsize=9, fontweight='bold')
         plt_ax3.set_xticks(range(1, n_linhas + 1))
         plt_ax3.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
-        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
-        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
-        img_umidade.seek(0)
-
-    # EXIBIÇÃO NA TELA
-    st.divider()
-    st.header("📈 Relatórios")
-    
-    col_g1, col_g2 = st.columns([1.2, 1.0])
-    with col_g1:
-        st.pyplot(fig1)
-    with col_g2:
-        if coletou_espessura: st.pyplot(fig2)
-        if coletou_umidade: st.pyplot(fig3)
-
-    # EMISSÃO DO PDF (PARÊNTESE DA LINHA 197 CORRIGIDO)
-    with st.sidebar:
-        st.divider()
-        st.header("📄 Emissão de Documento")
-        
-        if st.button("✨ Gerar Relatório em PDF"):
-            # CORREÇÃO CRÍTICA: Parêntese fechado corretamente na linha abaixo!
-            pdf = FPDF(orientation="P", unit="mm", format="A4")
-            pdf.set_auto_page_break(auto=True, margin=15)
-            pdf.add_page()
-            
-            if os.path.exists("logo.png"):
-                pdf.image("logo.png", x=10, y=10, w=45)
-                pdf.set_y(34)
-            else:
-                pdf.set_y(15)
-            
-            pdf.set_font("Helvetica", "B", 22)
-            pdf.set_text_color(15, 58, 97)
-            pdf.cell(0, 12, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
-            
-            pdf.set_draw_color(220, 222, 225)
-            pdf.line(10, 48, 200, 48)
-            pdf.set_y(54)
-            
-            pdf.set_text_color(50, 50,
+        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize
