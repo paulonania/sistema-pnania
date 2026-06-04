@@ -5,6 +5,7 @@ import pandas as pd
 from scipy.interpolate import griddata
 from fpdf import FPDF
 import io
+import os
 
 # CONFIGURAÇÃO DA PÁGINA WEB
 st.set_page_config(page_title="Sistema Pnania Premium", layout="wide")
@@ -33,7 +34,7 @@ with st.sidebar:
     coletou_espessura = st.checkbox("Incluir Mapa de Espessura", value=True)
 
 # ==============================================================================
-# 2. ENTRADA DE DADOS - ALTERADO PARA: Dados Coletados
+# 2. ENTRADA DE DADOS - Dados Coletados
 # ==============================================================================
 st.header("📋 Dados Coletados")
 st.markdown("Insira os valores coletados de forma direta para cada ponto da grade:")
@@ -96,7 +97,7 @@ if not df_dados.empty:
     umidade_media_geral = df_dados["Umidade"].mean()
     espessura_media_geral = round(df_dados["Espessura"].mean())
 
-    # GERAÇÃO DOS GRÁFICOS EM MEMÓRIA (PARA EXIBIR E SALVAR NO PDF)
+    # GERAÇÃO DOS GRÁFICOS EM MEMÓRIA
     fases, verde_inf, verde_sup = ['Amortecimento', 'Transição', 'Suporte'], [3.5, 5.5, 7.0], [4.5, 6.5, 8.0]
     
     # 1. Gráfico de Penetrômetro
@@ -184,7 +185,7 @@ if not df_dados.empty:
         plt.close(fig3)
 
     # ==============================================================================
-    # EXIBIÇÃO NA TELA - ALTERADO PARA: Relatórios
+    # EXIBIÇÃO NA TELA - Relatórios
     # ==============================================================================
     st.divider()
     st.header("📈 Relatórios")
@@ -197,32 +198,45 @@ if not df_dados.empty:
         if coletou_umidade: st.image(img_umidade, use_container_width=True)
 
     # ==============================================================================
-    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (TRATANDO CARACTERES ESPECIAIS)
+    # MOTOR DE GERAÇÃO DO LAUDO EM PDF (COM SUPORTE A LOGO DINÂMICA)
     # ==============================================================================
     with st.sidebar:
         st.divider()
         st.header("📄 Emissão de Documento")
         
         if st.button("✨ Gerar Relatório em PDF"):
-            # Cria a classe PDF forçando o modo de texto "latin-1" nativo do PDF para aceitar acentos
             pdf = FPDF(orientation="P", unit="mm", format="A4")
             pdf.set_auto_page_break(auto=True, margin=15)
             
             # --- PÁGINA 1: Capa e Gráfico de Penetrômetro ---
             pdf.add_page()
             
-            # Cabeçalho Técnico Elegante
-            pdf.set_fill_color(15, 58, 97) # Azul Pnania
+            # Cabeçalho Técnico Elegante (Azul Pnania)
+            pdf.set_fill_color(15, 58, 97)
             pdf.rect(0, 0, 210, 38, "F")
             
-            pdf.set_font("Helvetica", "B", 15)
-            pdf.set_text_color(255, 255, 255)
-            # Convertendo os textos para latin-1 para evitar erros de acentuação
-            pdf.cell(0, 8, "LAUDO TÉCNICO DE AVALIAÇÃO ESTRUTURAL".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
-            pdf.set_font("Helvetica", "", 11)
-            pdf.cell(0, 6, "MÉTODO PAULO NANIA — ENGENHARIA DE SUPERFÍCIES EQUESTRES".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+            # SE A LOGO EXISTIR NO REPOSITÓRIO, INSERE E REORGANIZA O TEXTO NA ESQUERDA
+            if os.path.exists("logo.png"):
+                # Insere a logo no canto direito superior (largura de 32mm automático)
+                pdf.image("logo.png", x=165, y=5, w=32)
+                
+                # Alinha textos à esquerda para dar espaço à logo
+                pdf.set_y(7)
+                pdf.set_font("Helvetica", "B", 14)
+                pdf.set_text_color(255, 255, 255)
+                pdf.cell(150, 8, "LAUDO TÉCNICO DE AVALIAÇÃO ESTRUTURAL".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
+                pdf.set_font("Helvetica", "", 10)
+                pdf.cell(150, 6, "MÉTODO PAULO NANIA — ENGENHARIA EQUESTRE".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
+            else:
+                # Caso não tenha subido a logo ainda, centraliza o texto padrão
+                pdf.set_y(8)
+                pdf.set_font("Helvetica", "B", 15)
+                pdf.set_text_color(255, 255, 255)
+                pdf.cell(0, 8, "LAUDO TÉCNICO DE AVALIAÇÃO ESTRUTURAL".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+                pdf.set_font("Helvetica", "", 11)
+                pdf.cell(0, 6, "MÉTODO PAULO NANIA — ENGENHARIA DE SUPERFÍCIES EQUESTRES".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
             
-            pdf.ln(12)
+            pdf.set_y(46)
             
             # Quadro de Identificação da Propriedade
             pdf.set_text_color(50, 50, 50)
@@ -257,14 +271,19 @@ if not df_dados.empty:
             if coletou_espessura or coletou_umidade:
                 pdf.add_page()
                 
-                # Mini cabeçalho da página 2
+                # Mini cabeçalho da página 2 com espaço para a logo pequena
                 pdf.rect(0, 0, 210, 15, "F")
                 pdf.set_font("Helvetica", "B", 10)
                 pdf.set_text_color(255, 255, 255)
                 pdf.set_y(4)
-                pdf.cell(0, 6, f"RELATÓRIO DE MAPEAMENTO CONTÍNUO — {nome_fazenda.upper()}".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
-                pdf.set_text_color(50, 50, 50)
                 
+                if os.path.exists("logo.png"):
+                    pdf.image("logo.png", x=180, y=2, w=18)
+                    pdf.cell(160, 6, f"RELATÓRIO DE MAPEAMENTO CONTÍNUO — {nome_fazenda.upper()}".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="L")
+                else:
+                    pdf.cell(0, 6, f"RELATÓRIO DE MAPEAMENTO CONTÍNUO — {nome_fazenda.upper()}".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+                
+                pdf.set_text_color(50, 50, 50)
                 pdf.set_y(25)
                 pdf.set_font("Helvetica", "B", 11)
                 pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Campo".encode('latin-1', 'replace').decode('latin-1'), ln=True)
