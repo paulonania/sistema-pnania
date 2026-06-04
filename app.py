@@ -11,7 +11,7 @@ import os
 st.set_page_config(page_title="Sistema Pnania Premium", layout="wide")
 
 st.title("📊 Gerador de Relatórios — Método Pnania")
-st.markdown("Configure a malha de amostragem da pista e preencha os dados abaixo. O sistema gera os mapas contínuos na hora!")
+st.markdown("Configure a malha de amostragem da pista e preencha os dados abaixo.")
 
 # ==============================================================================
 # 1. IDENTIFICAÇÃO E CONFIGURAÇÃO DA MALHA (BARRA LATERAL)
@@ -66,19 +66,9 @@ for l_idx, aba in enumerate(abas):
                 with cols[curr_idx]: esp = st.number_input("Espessura (cm)", min_value=0, max_value=50, value=12, step=1, key=f"esp_{l}_{p}")
                 
             lista_dados.append({
-                "Haras": nome_fazenda, 
-                "Pista": nome_pista, 
-                "Dimensão": dimensao_pista, 
-                "Data": data_coleta, 
-                "Linha": f"Linha {l}", 
-                "Ponto": f"Ponto {p}", 
-                "X": l, 
-                "Y": p, 
-                "1ª Queda": q1, 
-                "2ª Queda": q2, 
-                "3ª Queda": q3, 
-                "Umidade": umi, 
-                "Espessura": esp
+                "Haras": nome_fazenda, "Pista": nome_pista, "Dimensão": dimensao_pista, "Data": data_coleta, 
+                "Linha": f"Linha {l}", "Ponto": f"Ponto {p}", "X": l, "Y": p, 
+                "1ª Queda": q1, "2ª Queda": q2, "3ª Queda": q3, "Umidade": umi, "Espessura": esp
             })
 
 df_dados = pd.DataFrame(lista_dados)
@@ -105,7 +95,7 @@ if not df_dados.empty:
     plt_ax1.fill_between(x_indices, verde_inf, verde_sup, color='#e2f0d9', alpha=0.7, label='Método Pnania')
     plt_ax1.plot(x_indices, verde_sup, color='#a9d08e', linestyle='--', linewidth=1.2)
     plt_ax1.plot(x_indices, verde_inf, color='#a9d08e', linestyle='--', linewidth=1.2)
-    plt_ax1.plot(x_indices, medicao_atual, color='#0f3a61', linewidth=3.5, marker='s', markersize=12, markerfacecolor='white', markeredgewidth=3, label=f"{nome_pista} ({data_coleta})")
+    plt_ax1.plot(x_indices, medicao_atual, color='#0f3a61', linewidth=3.5, marker='s', markersize=12, markerfacecolor='white', markeredgewidth=3, label=f"{nome_pista}")
     
     for i, txt in enumerate(medicao_atual):
         plt_ax1.annotate(f'{txt:.1f}', (x_indices[i], medicao_atual[i]), textcoords="offset points", xytext=(0, 14), ha='center', fontweight='bold', fontsize=11, color='#0f3a61')
@@ -118,7 +108,7 @@ if not df_dados.empty:
     plt_ax1.spines['right'].set_visible(False)
     plt_ax1.grid(axis='y', linestyle=':', alpha=0.5, color='#cccccc')
     plt.suptitle('ÍNDICE DE PENETRÔMETRO', fontsize=13, fontweight='bold', color='#0f3a61', y=0.98)
-    plt.title(f"{nome_fazenda} — {nome_pista} ({dimensao_pista}) — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
+    plt.title(f"{nome_fazenda} — {nome_pista} — {data_coleta}", fontsize=9.5, pad=12, fontweight='bold', color='#555555')
     plt_ax1.legend(loc='upper left', frameon=True, facecolor='white', edgecolor='#e0e0e0', fontsize=9)
     
     colunas_tab = ['Amortecimento', 'Transição', 'Suporte']
@@ -138,4 +128,141 @@ if not df_dados.empty:
     plt.savefig(img_penetro, format='png', bbox_inches='tight', dpi=150)
     img_penetro.seek(0)
 
-    xi = np.linspace(1, n_linhas
+    # LINHAS CURTAS PARA EVITAR QUEBRA AUTOMÁTICA DO GITHUB
+    xi = np.linspace(1, n_linhas, 100)
+    yi = np.linspace(1, n_pontos, 100)
+    xi, yi = np.meshgrid(xi, yi)
+    
+    img_espessura = io.BytesIO()
+    if coletou_espessura:
+        zi_espessura = griddata((df_dados['X'], df_dados['Y']), df_dados['Espessura'], (xi, yi), method='cubic')
+        fig2, plt_ax2 = plt.subplots(figsize=(7, 4.2))
+        mapa1 = plt_ax2.imshow(zi_espessura, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
+        plt_ax2.set_title('MAPA DE ESPESSURA DA CAMADA (cm)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        plt_ax2.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
+        plt_ax2.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
+        plt_ax2.set_yticks(range(1, n_pontos + 1))
+        plt_ax2.set_yticklabels([str(i) for i in range(1, n_pontos + 1)], fontsize=9, fontweight='bold')
+        plt_ax2.set_xticks(range(1, n_linhas + 1))
+        plt_ax2.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
+        fig2.colorbar(mapa1, ax=plt_ax2).set_label('Espessura (cm)', fontsize=9, fontweight='bold')
+        plt.savefig(img_espessura, format='png', bbox_inches='tight', dpi=150)
+        img_espessura.seek(0)
+
+    img_umidade = io.BytesIO()
+    if coletou_umidade:
+        zi_umidade = griddata((df_dados['X'], df_dados['Y']), df_dados['Umidade'], (xi, yi), method='cubic')
+        fig3, plt_ax3 = plt.subplots(figsize=(7, 4.2))
+        mapa2 = plt_ax3.imshow(zi_umidade, extent=[1, n_linhas, 1, n_pontos], origin='lower', cmap='turbo', aspect='auto')
+        plt_ax3.set_title('MAPA DE UMIDADE DA PISTA (%)', fontsize=11, fontweight='bold', color='#0f3a61', pad=12)
+        plt_ax3.set_xlabel('Linhas de Coleta (Largura)', fontsize=9, fontweight='bold')
+        plt_ax3.set_ylabel('Pontos de Coleta (Comprimento)', fontsize=9, fontweight='bold')
+        plt_ax3.set_yticks(range(1, n_pontos + 1))
+        plt_ax3.set_yticklabels([str(i) for i in range(1, n_pontos + 1)], fontsize=9, fontweight='bold')
+        plt_ax3.set_xticks(range(1, n_linhas + 1))
+        plt_ax3.set_xticklabels([f"L {i}" for i in range(1, n_linhas + 1)], fontsize=9)
+        fig3.colorbar(mapa2, ax=plt_ax3).set_label('Umidade (%)', fontsize=9, fontweight='bold')
+        plt.savefig(img_umidade, format='png', bbox_inches='tight', dpi=150)
+        img_umidade.seek(0)
+
+    # EXIBIÇÃO NA TELA
+    st.divider()
+    st.header("📈 Relatórios")
+    
+    col_g1, col_g2 = st.columns([1.2, 1.0])
+    with col_g1:
+        st.pyplot(fig1)
+    with col_g2:
+        if coletou_espessura: st.pyplot(fig2)
+        if coletou_umidade: st.pyplot(fig3)
+
+    # EMISSÃO DO LAUDO EM PDF
+    with st.sidebar:
+        st.divider()
+        st.header("📄 Emissão de Documento")
+        
+        if st.button("✨ Gerar Relatório em PDF"):
+            pdf = FPDF(orientation="P", unit="mm", format="A4")
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.add_page()
+            
+            if os.path.exists("logo.png"):
+                pdf.image("logo.png", x=10, y=10, w=45)
+                pdf.set_y(34)
+            else:
+                pdf.set_y(15)
+            
+            pdf.set_font("Helvetica", "B", 22)
+            pdf.set_text_color(15, 58, 97)
+            pdf.cell(0, 12, "LAUDO TÉCNICO".encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
+            
+            pdf.set_draw_color(220, 222, 225)
+            pdf.line(10, 48, 200, 48)
+            pdf.set_y(54)
+            
+            pdf.set_text_color(50, 50, 50)
+            pdf.set_fill_color(245, 247, 250)
+            pdf.set_font("Helvetica", "B", 11)
+            
+            txt_quadro = "  DADOS DA PROPRIEDADE E DA COLETA"
+            pdf.cell(0, 7, txt_quadro.encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
+            
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(45, 7, " Fazenda / Haras: ", border="LT")
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 7, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
+            
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(45, 7, " Pista / Picadeiro: ", border="L")
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 7, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
+            
+            pdf.set_font("Helvetica", "", 10)
+            pdf.cell(45, 7, " Data da Coleta: ", border="LB")
+            pdf.set_font("Helvetica", "B", 10)
+            pdf.cell(0, 7, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
+            
+            pdf.ln(8)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+            pdf.ln(2)
+            pdf.image(img_penetro, x=15, w=180)
+            
+            if coletou_espessura or coletou_umidade:
+                pdf.add_page()
+                if os.path.exists("logo.png"):
+                    pdf.image("logo.png", x=10, y=8, w=25)
+                
+                pdf.line(10, 20, 200, 20)
+                pdf.set_text_color(50, 50, 50)
+                pdf.set_y(26)
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.cell(0, 6, "2. Distribuição Espacial e Mapas de Calor".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+                pdf.ln(4)
+                
+                if coletou_espessura:
+                    pdf.image(img_espessura, x=35, w=140)
+                    pdf.ln(10)
+                if coletou_umidade:
+                    pdf.image(img_umidade, x=35, w=140)
+            
+            pdf_output = pdf.output()
+            st.download_button(
+                label="📥 Baixar Laudo Técnico (.PDF)", 
+                data=bytes(pdf_output), 
+                file_name=f"Laudo_Tecnico_{nome_fazenda.replace(' ', '_')}.pdf", 
+                mime="application/pdf"
+            )
+
+        # DICIONÁRIO TOTALMENTE QUEBRADO EM LINHAS CURTAS
+        df_exportar = df_dados.drop(columns=["X", "Y"]).rename(columns={
+            "1ª Queda": "1ª Queda - Amortecimento (cm)", 
+            "2ª Queda": "2ª Queda - Transição (cm)", 
+            "3ª Queda": "3ª Queda - Suporte (cm)", 
+            "Umidade": "Umidade TDR (%)", 
+            "Espessura": "Espessura da Camada (cm)"
+        })
+        csv_data = df_exportar.to_csv(index=False).encode('utf-8')
+        st.download_button(label="📥 Baixar Tabela de Campo (.CSV)", data=csv_data, file_name=f"Levantamento_{nome_fazenda.replace(' ', '_')}_{data_coleta.replace('/', '-')}.csv", mime='text/csv')
+else:
+    st.warning("A planilha está vazia!")
