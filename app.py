@@ -265,50 +265,70 @@ if not df_dados.empty:
             pdf.cell(0, 12, txt_tit.encode('latin-1', 'replace').decode('latin-1'), ln=True, align="C")
             
             pdf.set_draw_color(220, 222, 225)
-            pdf.line(10, 48, 200, 48)
-            pdf.set_y(52)
+            pdf.line(10, 45, 200, 45)
+            pdf.set_y(48)
             
             pdf.set_text_color(50, 50, 50)
             pdf.set_fill_color(245, 247, 250)
             
             pdf.set_font("Helvetica", "B", 10)
             txt_quadro = "  DADOS DA PROPRIEDADE E DA COLETA"
-            pdf.cell(0, 6, txt_quadro.encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
+            pdf.cell(0, 5, txt_quadro.encode('latin-1', 'replace').decode('latin-1'), ln=True, fill=True)
             
             pdf.set_font("Helvetica", "", 9)
-            pdf.cell(40, 6, " Fazenda / Haras: ", border="LT")
+            pdf.cell(40, 5, " Fazenda / Haras: ", border="LT")
             pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
+            pdf.cell(0, 5, f"{nome_fazenda}".encode('latin-1', 'replace').decode('latin-1'), border="RT", ln=True)
             
             pdf.set_font("Helvetica", "", 9)
-            pdf.cell(40, 6, " Pista / Picadeiro: ", border="L")
+            pdf.cell(40, 5, " Pista / Picadeiro: ", border="L")
             pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
+            pdf.cell(0, 5, f"{nome_pista} ({dimensao_pista})".encode('latin-1', 'replace').decode('latin-1'), border="R", ln=True)
             
             pdf.set_font("Helvetica", "", 9)
-            pdf.cell(40, 6, " Data da Coleta: ", border="LB")
+            pdf.cell(40, 5, " Data da Coleta: ", border="LB")
             pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(0, 6, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
+            pdf.cell(0, 5, f"{data_coleta}".encode('latin-1', 'replace').decode('latin-1'), border="RB", ln=True)
             
             if txt_obs:
-                pdf.ln(2)
+                pdf.ln(1)
                 pdf.set_font("Helvetica", "B", 9)
-                pdf.cell(40, 6, " Manejo Prévio: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
-                pdf.set_font("Helvetica", "", 9)
-                pdf.multi_cell(0, 6, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+                pdf.cell(40, 5, " Manejo Prévio: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 8.5)
+                pdf.multi_cell(0, 4.5, f"{txt_obs}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
             
             if txt_parecer:
                 pdf.ln(1)
                 pdf.set_font("Helvetica", "B", 9)
-                pdf.cell(40, 6, " Parecer Técnico: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
-                pdf.set_font("Helvetica", "", 9)
-                pdf.multi_cell(0, 6, f"{txt_parecer}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
+                pdf.cell(40, 5, " Parecer Técnico: ".encode('latin-1', 'replace').decode('latin-1'), border="LBT", fill=True)
+                pdf.set_font("Helvetica", "", 8.5)
+                pdf.multi_cell(0, 4.5, f"{txt_parecer}".encode('latin-1', 'replace').decode('latin-1'), border="RBT")
             
-            pdf.ln(4)
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 6, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 10.5)
+            pdf.cell(0, 5, "1. Perfil de Compactação (Índice de Penetrômetro)".encode('latin-1', 'replace').decode('latin-1'), ln=True)
             pdf.ln(1)
-            pdf.image(img_penetro, x=15, w=180)
+            
+            # COMPACTADO VISUAL DO GRÁFICO (w=165) PARA FORÇAR A VOLTA PARA A PRIMEIRA PÁGINA
+            pdf.image(img_penetro, x=22, w=165)
+            
+            # --- AJUSTE: DESENHO DOS CÍRCULOS COLORIDOS REAIS NA LEGENDA DO PDF ---
+            pdf.ln(2)
+            y_legenda = pdf.get_y()
+            pdf.set_font("Helvetica", "B", 8.5)
+            pdf.set_text_color(60, 60, 60)
+            
+            pdf.cell(42, 5, "       Excelente: < 10.0%", ln=False)
+            pdf.set_fill_color(40, 167, 69) # Verde ffill
+            pdf.ellipse(12, y_legenda + 1.2, 3.2, 3.2, "F")
+            
+            pdf.cell(42, 5, "       Alerta: 10.0% - 15.0%", ln=False)
+            pdf.set_fill_color(255, 193, 7) # Amarelo fill
+            pdf.ellipse(54, y_legenda + 1.2, 3.2, 3.2, "F")
+            
+            pdf.cell(42, 5, "       Critico: > 15.0%", ln=True)
+            pdf.set_fill_color(220, 53, 69) # Vermelho fill
+            pdf.ellipse(96, y_legenda + 1.2, 3.2, 3.2, "F")
             
             # --- PÁGINA 2: MAPAS ---
             if coletou_espessura or coletou_umidade:
