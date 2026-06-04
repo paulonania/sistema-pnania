@@ -119,8 +119,4 @@ if not df_dados.empty:
     
     fig1, plt_ax1 = plt.subplots(figsize=(9, 6.2))
     plt_ax1.set_facecolor('#f4f4f6')
-    x_indices = np.arange(len(fases))
-    plt_ax1.fill_between(x_indices, verde_inf, verde_sup, color='#e2f0d9', alpha=0.7, label='Método Pnania')
-    plt_ax1.plot(x_indices, verde_sup, color='#a9d08e', linestyle='--', linewidth=1.2)
-    plt_ax1.plot(x_indices, verde_inf, color='#a9d08e', linestyle='--', linewidth=1.2)
-    plt_ax1.plot(x_indices, medicao_atual, color='#0f3a61', linewidth=3.5, marker='
+    x_
